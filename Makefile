@@ -8,3 +8,10 @@ ARGS=$(filter-out $@,$(MAKECMDGOALS))
 
 mix:
 	docker exec backend mix $(ARGS)
+
+db-shell:
+	docker exec -it sportsnet-postgres-1 psql -U postgres -d postgres
+
+db-migrate:
+	docker exec backend mix ecto.migrate
+
