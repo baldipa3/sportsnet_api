@@ -4,29 +4,23 @@ defmodule SportsnetApiWeb.Router do
   import SportsnetApiWeb.UserAuth
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {SportsnetApiWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-    plug :fetch_current_user
+    # plug :accepts, ["html"]
+    # plug :fetch_session
+    # plug :fetch_live_flash
+    # plug :put_root_layout, html: {SportsnetApiWeb.Layouts, :root}
+    # plug :protect_from_forgery
+    # plug :put_secure_browser_headers
+    # plug :fetch_current_user
   end
 
   pipeline :api do
     plug :accepts, ["json"]
   end
 
-  scope "/", SportsnetApiWeb do
-    pipe_through :browser
-
-    get "/", PageController, :home
+  pipeline :api_protected do
+    plug :accepts, ["json"]
+    plug :fetch_api_user
   end
-
-  # Other scopes may use custom stacks.
-  # scope "/api", SportsnetApiWeb do
-  #   pipe_through :api
-  # end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:sportsnet_api, :dev_routes) do
@@ -48,33 +42,21 @@ defmodule SportsnetApiWeb.Router do
   ## Authentication routes
 
   scope "/", SportsnetApiWeb do
-    pipe_through [:browser, :redirect_if_user_is_authenticated]
+    pipe_through [:api]  # public routes
 
-    get "/users/register", UserRegistrationController, :new
-    post "/users/register", UserRegistrationController, :create
-    get "/users/log_in", UserSessionController, :new
-    post "/users/log_in", UserSessionController, :create
-    get "/users/reset_password", UserResetPasswordController, :new
-    post "/users/reset_password", UserResetPasswordController, :create
-    get "/users/reset_password/:token", UserResetPasswordController, :edit
-    put "/users/reset_password/:token", UserResetPasswordController, :update
+    post "/users/register", Auth.UserRegistrationController, :create
+    # post "/users/log_in", UserSessionController, :create
+    # post "/users/confirm", UserConfirmationController, :create
+    # post "/users/confirm/:token", UserConfirmationController, :update
+    # post "/users/reset_password", UserResetPasswordController, :create
+    # put "/users/reset_password/:token", UserResetPasswordController, :update
   end
 
   scope "/", SportsnetApiWeb do
-    pipe_through [:browser, :require_authenticated_user]
+    pipe_through :api_protected  # authenticated routes
 
-    get "/users/settings", UserSettingsController, :edit
-    put "/users/settings", UserSettingsController, :update
-    get "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
-  end
-
-  scope "/", SportsnetApiWeb do
-    pipe_through [:browser]
-
-    delete "/users/log_out", UserSessionController, :delete
-    get "/users/confirm", UserConfirmationController, :new
-    post "/users/confirm", UserConfirmationController, :create
-    get "/users/confirm/:token", UserConfirmationController, :edit
-    post "/users/confirm/:token", UserConfirmationController, :update
+    # delete "/users/log_out", UserSessionController, :delete
+    # put "/users/settings", UserSettingsController, :update
+    # post "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
   end
 end

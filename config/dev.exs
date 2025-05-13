@@ -4,7 +4,7 @@ import Config
 config :sportsnet_api, SportsnetApi.Repo,
   username: System.get_env("POSTGRES_USER") || "baldipa3",
   password: System.get_env("POSTGRES_PASSWORD") || "",
-  database: System.get_env("POSTGRES_DB"),
+  database: "sportsnet_api_dev",
   hostname: System.get_env("POSTGRES_HOST") || "localhost",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,

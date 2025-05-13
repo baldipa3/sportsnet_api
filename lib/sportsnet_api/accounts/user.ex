@@ -3,6 +3,8 @@ defmodule SportsnetApi.Accounts.User do
   import Ecto.Changeset
 
   schema "users" do
+    field :name, :string
+    field :surname, :string
     field :email, :string
     field :password, :string, virtual: true, redact: true
     field :hashed_password, :string, redact: true
@@ -10,6 +12,12 @@ defmodule SportsnetApi.Accounts.User do
     field :confirmed_at, :utc_datetime
 
     timestamps(type: :utc_datetime)
+  end
+
+  def changeset(user, attrs) do
+    user
+    |> cast(attrs, [:name, :surname, :email])
+    |> validate_required([:name, :surname, :email])
   end
 
   @doc """

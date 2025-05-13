@@ -6,6 +6,8 @@
 
 ARGS=$(filter-out $@,$(MAKECMDGOALS))
 
+.PHONY: test
+
 mix:
 	docker exec backend mix $(ARGS)
 
@@ -15,3 +17,23 @@ db-shell:
 db-migrate:
 	docker exec backend mix ecto.migrate
 
+db-seed:
+	docker exec backend mix run priv/repo/seeds.exs
+
+db-create:
+	docker exec backend mix ecto.create
+
+repl:
+	docker exec -it backend iex -S mix
+
+sh:
+	docker exec -it backend sh
+
+test:
+	docker exec backend mix test $(ARGS)
+
+attach:
+	docker attach --sig-proxy=false --detach-keys="ctrl-c" backend
+
+up:
+	docker start backend
