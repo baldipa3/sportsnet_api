@@ -21,12 +21,16 @@ defmodule SportsnetApiWeb.Auth.UserRegistrationController do
           }
         })
 
-      {:error, _} ->
+      {:error, %Ecto.Changeset{} = changeset} ->
         conn
         |> put_status(:bad_request)
         |> json(%{
           status: "error",
-          errors: "something went wrong"
+          errors: Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+            Enum.reduce(opts, msg, fn {key, value}, acc ->
+              String.replace(acc, "%{#{key}}", to_string(value))
+            end)
+          end)
         })
     end
   end

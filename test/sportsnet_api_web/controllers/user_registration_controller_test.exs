@@ -11,10 +11,10 @@ defmodule SportsnetApiWeb.UserRegistrationControllerTest do
   }
 
   @invalid_attrs %{
-    "email" => "",
+    "email" => unique_user_email(),
     "name" => "",
-    "surname" => "",
-    "password" => ""
+    "surname" => "User",
+    "password" => "123"
   }
 
 
@@ -28,12 +28,20 @@ defmodule SportsnetApiWeb.UserRegistrationControllerTest do
       assert json["data"]["email"] == @valid_attrs["email"]
     end
 
-    test "responds with errors for invalid data", %{conn: conn} do
+    test "responds with errors for invalid password", %{conn: conn} do
       conn = post(conn, ~p"/users/register", %{"user" => valid_user_attributes(@invalid_attrs)})
       json = json_response(conn, 400)
 
       assert json["status"] == "error"
-      assert json["errors"] == "something went wrong"
+      assert json["errors"]["password"] == ["should be at least 12 character(s)"]
+    end
+
+    test "responds with errors for required missing attribute", %{conn: conn} do
+      conn = post(conn, ~p"/users/register", %{"user" => valid_user_attributes(@invalid_attrs)})
+      json = json_response(conn, 400)
+
+      assert json["status"] == "error"
+      assert json["errors"]["name"] == ["can't be blank"]
     end
   end
 end
