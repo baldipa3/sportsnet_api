@@ -17,7 +17,6 @@ defmodule SportsnetApiWeb.UserRegistrationControllerTest do
     "password" => "123"
   }
 
-
   describe "POST /users/register" do
     test "creates account and responds with json", %{conn: conn} do
       conn = post(conn, ~p"/users/register", %{"user" => valid_user_attributes(@valid_attrs)})

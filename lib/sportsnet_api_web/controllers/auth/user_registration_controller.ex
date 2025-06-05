@@ -3,6 +3,42 @@ defmodule SportsnetApiWeb.Auth.UserRegistrationController do
 
   alias SportsnetApi.Accounts
 
+  @doc """
+    Handles user registration.
+
+    Expected request body:
+      {
+        "user": {
+          "email": "user@example.com",
+          "name": "First",
+          "surname": "Last",
+          "password": "strongpassword123"
+        }
+      }
+
+    Responses:
+      - 201 Created:
+        {
+          "status": "success",
+          "data": {
+            "id": 1,
+            "name": "First",
+            "surname": "Last",
+            "email": "user@example.com",
+            "token": "..."
+          }
+        }
+
+      - 400 Bad Request:
+        {
+          "status": "error",
+          "errors": {
+            "email": ["can't be blank"],
+            "password": ["can't be blank"]
+          }
+        }
+  """
+  @spec create(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def create(conn, %{"user" => user_params}) do
     case Accounts.register_user(user_params) do
       {:ok, user} ->

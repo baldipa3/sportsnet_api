@@ -37,3 +37,15 @@ attach:
 
 up:
 	docker start backend
+
+up:
+	@echo "Starting backend container..." && \
+	docker start backend
+
+restart:
+	@echo "Restarting backend container..." && \
+	docker restart backend
+
+down:
+	@echo "Stopping backend container..." && \
+	docker stop backend
