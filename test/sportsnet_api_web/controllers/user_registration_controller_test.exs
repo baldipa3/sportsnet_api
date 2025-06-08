@@ -32,7 +32,7 @@ defmodule SportsnetApiWeb.UserRegistrationControllerTest do
       json = json_response(conn, 400)
 
       assert json["status"] == "error"
-      assert json["errors"]["password"] == ["should be at least 12 character(s)"]
+      assert json["errors"]["password"] == ["should be at least 6 character(s)"]
     end
 
     test "responds with errors for required missing attribute", %{conn: conn} do
