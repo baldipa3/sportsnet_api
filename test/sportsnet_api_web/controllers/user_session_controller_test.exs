@@ -1,4 +1,4 @@
-defmodule SportsnetApiWeb.UserRegistrationControllerTest do
+defmodule SportsnetApiWeb.UserSessionControllerTest do
   use SportsnetApiWeb.ConnCase, async: true
 
   import SportsnetApi.AccountsFixtures
@@ -52,6 +52,11 @@ defmodule SportsnetApiWeb.UserRegistrationControllerTest do
         |> delete(~p"/users/log_out")
 
       assert conn.status == 200
+
+      json = json_response(conn, 200)
+      assert json["status"] == "success"
+      assert json["message"] == "logged out"
+
       assert Accounts.fetch_user_by_api_token(token) == :error
     end
   end

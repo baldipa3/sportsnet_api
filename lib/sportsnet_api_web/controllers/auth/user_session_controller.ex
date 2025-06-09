@@ -35,5 +35,6 @@ defmodule SportsnetApiWeb.UserSessionController do
     conn
     |> UserAuth.log_out_user()
     |> put_status(:ok)
+    |> json(%{status: "success", message: "logged out"})
   end
 end
