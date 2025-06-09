@@ -49,3 +49,6 @@ restart:
 down:
 	@echo "Stopping backend container..." && \
 	docker stop backend
+
+test:
+	docker exec -it backend iex -S mix test --trace $(ARGS)

@@ -215,33 +215,6 @@ defmodule SportsnetApi.Accounts do
     end
   end
 
-  ## Session
-
-  @doc """
-  Generates a session token.
-  """
-  def generate_user_session_token(user) do
-    {token, user_token} = UserToken.build_session_token(user)
-    Repo.insert!(user_token)
-    token
-  end
-
-  @doc """
-  Gets the user with the given signed token.
-  """
-  def get_user_by_session_token(token) do
-    {:ok, query} = UserToken.verify_session_token_query(token)
-    Repo.one(query)
-  end
-
-  @doc """
-  Deletes the signed token with the given context.
-  """
-  def delete_user_session_token(token) do
-    Repo.delete_all(UserToken.by_token_and_context_query(token, "session"))
-    :ok
-  end
-
   ## Confirmation
 
   @doc ~S"""
@@ -361,6 +334,17 @@ defmodule SportsnetApi.Accounts do
     {encoded_token, user_token} = UserToken.build_email_token(user, "api-token")
     Repo.insert!(user_token)
     encoded_token
+  end
+
+  @doc """
+  Deletes the api token for a user.
+  """
+  def delete_user_api_token(token) do
+    raw_token = Base.url_decode64!(token, padding: false)
+    hashed_token = :crypto.hash(:sha256, raw_token)
+
+    Repo.delete_all(UserToken.by_token_and_context_query(hashed_token, "api-token"))
+    :ok
   end
 
   @doc """

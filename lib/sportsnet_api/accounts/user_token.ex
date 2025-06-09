@@ -8,10 +8,12 @@ defmodule SportsnetApi.Accounts.UserToken do
 
   # It is very important to keep the reset password token expiry short,
   # since someone with access to the email may take over the account.
+
+  # TODO - Refactor to use for he API token
+  # @session_validity_in_days 60
   @reset_password_validity_in_days 1
-  @confirm_validity_in_days 7
   @change_email_validity_in_days 7
-  @session_validity_in_days 60
+  @confirm_validity_in_days 7
 
   schema "users_tokens" do
     field :token, :binary
@@ -20,48 +22,6 @@ defmodule SportsnetApi.Accounts.UserToken do
     belongs_to :user, SportsnetApi.Accounts.User
 
     timestamps(type: :utc_datetime, updated_at: false)
-  end
-
-  @doc """
-  Generates a token that will be stored in a signed place,
-  such as session or cookie. As they are signed, those
-  tokens do not need to be hashed.
-
-  The reason why we store session tokens in the database, even
-  though Phoenix already provides a session cookie, is because
-  Phoenix' default session cookies are not persisted, they are
-  simply signed and potentially encrypted. This means they are
-  valid indefinitely, unless you change the signing/encryption
-  salt.
-
-  Therefore, storing them allows individual user
-  sessions to be expired. The token system can also be extended
-  to store additional data, such as the device used for logging in.
-  You could then use this information to display all valid sessions
-  and devices in the UI and allow users to explicitly expire any
-  session they deem invalid.
-  """
-  def build_session_token(user) do
-    token = :crypto.strong_rand_bytes(@rand_size)
-    {token, %UserToken{token: token, context: "session", user_id: user.id}}
-  end
-
-  @doc """
-  Checks if the token is valid and returns its underlying lookup query.
-
-  The query returns the user found by the token, if any.
-
-  The token is valid if it matches the value in the database and it has
-  not expired (after @session_validity_in_days).
-  """
-  def verify_session_token_query(token) do
-    query =
-      from token in by_token_and_context_query(token, "session"),
-        join: user in assoc(token, :user),
-        where: token.inserted_at > ago(@session_validity_in_days, "day"),
-        select: user
-
-    {:ok, query}
   end
 
   @doc """

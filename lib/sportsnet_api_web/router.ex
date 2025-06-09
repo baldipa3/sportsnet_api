@@ -45,7 +45,7 @@ defmodule SportsnetApiWeb.Router do
     pipe_through [:api]  # public routes
 
     post "/users/register", Auth.UserRegistrationController, :create
-    # post "/users/log_in", UserSessionController, :create
+    post "/users/log_in", UserSessionController, :create
     # post "/users/confirm", UserConfirmationController, :create
     # post "/users/confirm/:token", UserConfirmationController, :update
     # post "/users/reset_password", UserResetPasswordController, :create
