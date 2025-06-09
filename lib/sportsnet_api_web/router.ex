@@ -55,7 +55,7 @@ defmodule SportsnetApiWeb.Router do
   scope "/", SportsnetApiWeb do
     pipe_through :api_protected  # authenticated routes
 
-    # delete "/users/log_out", UserSessionController, :delete
+    delete "/users/log_out", UserSessionController, :delete
     # put "/users/settings", UserSettingsController, :update
     # post "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
   end

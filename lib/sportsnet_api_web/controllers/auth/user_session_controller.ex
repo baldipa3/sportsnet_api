@@ -34,5 +34,6 @@ defmodule SportsnetApiWeb.UserSessionController do
   def delete(conn, _params) do
     conn
     |> UserAuth.log_out_user()
+    |> put_status(:ok)
   end
 end
