@@ -6,7 +6,7 @@ defmodule SportsnetApi.AccountsTest do
   import SportsnetApi.AccountsFixtures
   # alias SportsnetApi.Accounts.{User, UserToken}
 
-    describe "create_user_api_token/1 and fetch_user_by_api_token/1" do
+  describe "create_user_api_token/1 and fetch_user_by_api_token/1" do
     test "creates and fetches by token" do
       user = user_fixture()
       token = Accounts.create_user_api_token(user)

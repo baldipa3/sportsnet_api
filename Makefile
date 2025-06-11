@@ -1,6 +1,6 @@
 # Author: Pablo Baldini
 # Date Created: 07 May 2025
-# Last Modified: 07 May 2025
+# Last Modified: 09 Jun 2025
 # Description:
 # Set of commands to manage API mode of the app
 
@@ -21,7 +21,10 @@ db-seed:
 	docker exec backend mix run priv/repo/seeds.exs
 
 db-create:
-	docker exec backend mix ecto.create
+	mix ecto.gen.migration
+
+db-migration:
+	docker exec backend mix ecto.gen.migration $(ARGS)
 
 repl:
 	docker exec -it backend iex -S mix
