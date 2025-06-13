@@ -1,6 +1,6 @@
 defmodule SportsnetApi.Geography do
   @moduledoc """
-  The Geography module to handle locations
+  The Geography context - handles countries, cities, and location-related business logic
   """
 
   import Ecto.Query, warn: false

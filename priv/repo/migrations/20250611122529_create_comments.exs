@@ -6,13 +6,11 @@ defmodule SportsnetApi.Repo.Migrations.CreateComments do
       add :content, :text, null: false
       add :post_id, references(:posts, on_delete: :restrict)
       add :user_id, references(:users, on_delete: :restrict)
-      add :parent_comment_id, references(:comments, on_delete: :delete_all)
 
       timestamps(type: :utc_datetime)
     end
 
     create index(:comments, [:post_id])
     create index(:comments, [:user_id])
-    create index(:comments, [:parent_comment_id])
   end
 end

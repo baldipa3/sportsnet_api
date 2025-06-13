@@ -10,6 +10,9 @@ defmodule SportsnetApi.Accounts.User do
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :confirmed_at, :utc_datetime
+    has_many :posts, SportsnetApi.Social.Post
+    has_many :user_sports, SportsnetApi.UserSports.UserSport
+    has_many :sports, through: [:user_sports, :sport]
 
     timestamps(type: :utc_datetime)
   end

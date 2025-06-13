@@ -4,6 +4,7 @@ defmodule SportsnetApi.Geography.Country do
 
   schema "countries" do
     field :name, :string
+    has_many :cities, SportsnetApi.Geography.City
 
     timestamps(type: :utc_datetime)
   end
@@ -17,6 +18,7 @@ defmodule SportsnetApi.Geography.Country do
   def changeset(country, attrs) do
     country
     |> cast(attrs, [:name])
+    |> update_change(:name, &String.trim/1)
     |> validate_required(:name)
     |> unique_constraint(:name)
   end

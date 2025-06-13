@@ -32,9 +32,6 @@ repl:
 sh:
 	docker exec -it backend sh
 
-test:
-	docker exec backend mix test $(ARGS)
-
 attach:
 	docker attach --sig-proxy=false --detach-keys="ctrl-c" backend
 
