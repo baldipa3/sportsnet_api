@@ -83,3 +83,7 @@ config :swoosh, :api_client, false
 
 config :cors_plug,
   origin: ["http://localhost:3000"]
+
+config :sportsnet_api, SportsnetApi.MediaStorage,
+  adapter: SportsnetApi.MediaStorage.Local,
+  upload_path: "priv/static/images"

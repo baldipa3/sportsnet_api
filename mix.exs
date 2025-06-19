@@ -51,7 +51,9 @@ defmodule SportsnetApi.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:ex_doc, "~> 0.30", only: :dev, runtime: false},
-      {:cors_plug, "~> 3.0"}
+      {:cors_plug, "~> 3.0"},
+      {:ex_machina, "~> 2.7", only: [:test]},
+      {:faker, "~> 0.17", only: [:dev, :test]}
     ]
   end
 

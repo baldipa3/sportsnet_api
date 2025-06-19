@@ -9,6 +9,11 @@ defmodule SportsnetApi.Repo.Migrations.CreateMedia do
       add :url, :string, null: false
       add :position, :integer
       add :post_id, references(:posts, on_delete: :restrict)
+      add :file_size, :integer
+      add :filename, :string
+      add :width, :integer
+      add :height, :integer
+      add :duration, :integer
 
       timestamps(type: :utc_datetime)
     end

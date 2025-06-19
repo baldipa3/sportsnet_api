@@ -14,3 +14,7 @@ config :logger, level: :info
 
 config :cors_plug,
   origin: ["TODO"]
+
+config :sportsnet_api, SportsnetApi.MediaStorage,
+  adapter: SportsnetApi.MediaStorage.S3,
+  s3_bucket: "TODO"

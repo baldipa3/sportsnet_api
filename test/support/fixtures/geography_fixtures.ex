@@ -7,7 +7,8 @@ defmodule SportsnetApi.GeographyFixtures do
 
   def valid_country_attributes(attrs \\ %{}) do
     Enum.into(attrs, %{
-      name: valid_country_name()
+      name: valid_country_name(),
+      code: "AR"
     })
   end
 

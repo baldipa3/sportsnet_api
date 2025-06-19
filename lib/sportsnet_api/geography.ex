@@ -11,6 +11,12 @@ defmodule SportsnetApi.Geography do
   @doc """
   Create a new Country to make it available for users
   ## Examples
+
+    iex> create_country(%{field: value})
+    {:ok, %Contry{}}
+
+    iex> create_country(%{field: bad_value})
+    {:error, %Ecto.Changeset{}}
   """
 
   @spec create_country(map()) :: {:ok, Country} | {:error, Ecto.Changeset.t()}
@@ -22,7 +28,13 @@ defmodule SportsnetApi.Geography do
 
   @doc """
   Create a new City to make it avaiable for users
-  ### Examples
+  ## Examples
+
+    iex> create_city(%{field: value})
+    {:ok, %City{}}
+
+    iex> create_city(%{field: bad_value})
+    {:error, %Ecto.Changeset{}}
   """
 
   @spec create_city(map()) :: {:ok, City} | {:error, Ecto.Changeset.t()}

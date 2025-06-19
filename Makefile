@@ -26,6 +26,9 @@ db-create:
 db-migration:
 	docker exec backend mix ecto.gen.migration $(ARGS)
 
+db-reset:
+	mix ecto.reset
+
 repl:
 	docker exec -it backend iex -S mix
 

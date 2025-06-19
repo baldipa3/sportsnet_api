@@ -4,8 +4,8 @@ defmodule SportsnetApi.Repo.Migrations.CreateComments do
   def change do
     create table(:comments) do
       add :content, :text, null: false
-      add :post_id, references(:posts, on_delete: :restrict)
-      add :user_id, references(:users, on_delete: :restrict)
+      add :post_id, references(:posts, on_delete: :restrict), null: false
+      add :user_id, references(:users, on_delete: :restrict), null: false
 
       timestamps(type: :utc_datetime)
     end

@@ -9,6 +9,13 @@ defmodule SportsnetApi.Sports do
 
   @doc """
   Creates a new sports to make it available to all users
+  ## Examples
+
+    iex> create_sport(%{field: value})
+    {:ok, %Sport{}}
+
+    iex> create_sport(%{field: bad_value})
+    {:error, %Ecto.Changeset{}}
   """
 
   @spec create_sport(map()) :: {:ok, Sport} | {:error, Ecto.Changeset.t()}

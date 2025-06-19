@@ -16,8 +16,7 @@ defmodule SportsnetApi.Social.Post do
   @doc """
   Changeset to handle posts created by users
   """
-
-  def crete_post(post, attrs) do
+  def changeset(post, attrs) do
     post
     |> cast(attrs, [:caption, :user_id, :sport_id, :city_id])
     |> validate_required([:caption, :user_id, :sport_id, :city_id])

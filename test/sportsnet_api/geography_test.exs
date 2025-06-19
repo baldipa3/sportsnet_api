@@ -8,7 +8,7 @@ defmodule SportsnetApi.GeographyTest do
 
   describe "create_country/1" do
     test "creates country with valid attributes" do
-      attrs = %{name: "Argentina"}
+      attrs = %{name: "Argentina", code: "AR"}
 
       assert {:ok, %Country{} = country} = Geography.create_country(attrs)
       assert country.name == "Argentina"
@@ -16,7 +16,7 @@ defmodule SportsnetApi.GeographyTest do
     end
 
     test "returns an error with invalid attributes" do
-      attrs = %{name: nil}
+      attrs = %{name: nil, code: nil}
 
       assert {:error, %Ecto.Changeset{} = changeset} = Geography.create_country(attrs)
       assert "can't be blank" in errors_on(changeset).name
@@ -29,17 +29,28 @@ defmodule SportsnetApi.GeographyTest do
       refute changeset.valid?
     end
 
-    test "enforce uniq country name" do
-      attrs = %{name: "Spain"}
+    test "enforce unique country name" do
+      attrs = %{name: "Spain", code: "ES"}
 
       assert {:ok, _spain} = Geography.create_country(attrs)
 
-      assert {:error, %Ecto.Changeset{} = changeset} = Geography.create_country(attrs)
+      duplicate_name_attrs = %{name: "Spain", code: "XX"}
+      assert {:error, changeset} = Geography.create_country(duplicate_name_attrs)
       assert "has already been taken" in errors_on(changeset).name
     end
 
+    test "enforce unique country code" do
+      attrs = %{name: "Spain", code: "ES"}
+
+      assert {:ok, _spain} = Geography.create_country(attrs)
+
+      duplicate_code_attrs = %{name: "Germany", code: "ES"}
+      assert {:error, changeset} = Geography.create_country(duplicate_code_attrs)
+      assert "has already been taken" in errors_on(changeset).code
+    end
+
     test "trims whitespace from country name" do
-      attrs = %{name: "     Argentina    "}
+      attrs = %{name: "     Argentina    ", code: "AR"}
 
       assert{:ok, country} = Geography.create_country(attrs)
       assert country.name == "Argentina"
@@ -47,7 +58,6 @@ defmodule SportsnetApi.GeographyTest do
   end
 
   describe "create_city/1" do
-
     test "creates cities with valid attributes" do
       {:ok, country} = country_fixture()
       attrs = %{name: "Buenos Aires", country_id: country.id}
@@ -55,6 +65,7 @@ defmodule SportsnetApi.GeographyTest do
       assert {:ok, %City{} = city} = Geography.create_city(attrs)
       assert city.name == "Buenos Aires"
       assert city.id != nil
+      assert city.country_id != nil
     end
 
     test "return error with invalid attributes" do

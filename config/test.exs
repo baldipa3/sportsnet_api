@@ -39,3 +39,7 @@ config :phoenix, :plug_init_mode, :runtime
 # Enable helpful, but potentially expensive runtime checks
 config :phoenix_live_view,
   enable_expensive_runtime_checks: true
+
+config :sportsnet_api, SportsnetApi.MediaStorage,
+  adapter: SportsnetApi.MediaStorage.Local,
+  upload_path: "tmp/test_uploads"
