@@ -24,4 +24,8 @@ defmodule SportsnetApi.Sports do
     |> Sport.changeset(attrs)
     |> Repo.insert()
   end
+
+  def list_sports do
+    Repo.all(Sport)
+  end
 end

@@ -53,7 +53,9 @@ defmodule SportsnetApi.MixProject do
       {:ex_doc, "~> 0.30", only: :dev, runtime: false},
       {:cors_plug, "~> 3.0"},
       {:ex_machina, "~> 2.7", only: [:test]},
-      {:faker, "~> 0.17", only: [:dev, :test]}
+      {:faker, "~> 0.17", only: [:dev, :test]},
+      {:absinthe, "~> 1.6"},
+      {:absinthe_plug, "~> 1.5"}
     ]
   end
 

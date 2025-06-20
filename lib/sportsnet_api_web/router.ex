@@ -31,6 +31,15 @@ defmodule SportsnetApiWeb.Router do
     # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
+    scope "/" do
+      pipe_through [:api]  # public routes
+
+      forward "/graphiql", Absinthe.Plug.GraphiQL,
+        schema: SportsnetApi.Schema,
+        interface: :simple,
+        context: %{pubsub: SportsnetApiWeb.Endpoint}
+    end
+
     scope "/dev" do
       pipe_through :browser
 
@@ -41,11 +50,11 @@ defmodule SportsnetApiWeb.Router do
 
   ## Authentication routes
 
-  scope "/", SportsnetApiWeb do
+  scope "/" do
     pipe_through [:api]  # public routes
 
-    post "/users/register", Auth.UserRegistrationController, :create
-    post "/users/log_in", UserSessionController, :create
+    post "/users/register", SportsnetApiWeb.Auth.UserRegistrationController, :create
+    post "/users/log_in", SportsnetApiWeb.UserSessionController, :create
     # post "/users/confirm", UserConfirmationController, :create
     # post "/users/confirm/:token", UserConfirmationController, :update
     # post "/users/reset_password", UserResetPasswordController, :create

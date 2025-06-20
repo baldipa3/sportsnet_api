@@ -1,5 +1,6 @@
 defmodule SportsnetApi.Sports.Sport do
   use Ecto.Schema
+
   import Ecto.Changeset
 
   schema "sports" do
