@@ -61,10 +61,11 @@ defmodule SportsnetApiWeb.Router do
     # put "/users/reset_password/:token", UserResetPasswordController, :update
   end
 
-  scope "/", SportsnetApiWeb do
+  scope "/" do
     pipe_through :api_protected  # authenticated routes
 
-    delete "/users/log_out", UserSessionController, :delete
+    forward "/graphql", Absinthe.Plug, schema: SportsnetApi.Schema
+    delete "/users/log_out", SportsnetApiWeb.UserSessionController, :delete
     # put "/users/settings", UserSettingsController, :update
     # post "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
   end
