@@ -25,7 +25,15 @@ countries_and_cities = [
   {"United Kingdom", ["London", "Liverpool", "Leeds", "Manchester"]},
 ]
 
-sport_names = [ "Football", "Tennis", "Basketball", "Baseball", "Hockey", "Swimming", "Athletics"];
+sports_list = [
+  {"Football", "football"},
+  {"Tennis", "tennis"},
+  {"Basketball", "basketball"},
+  {"Baseball", "baseball"},
+  {"Hockey", "hockey"},
+  {"Swimming", "swimming"},
+  {"Athletics", "athletics"}
+];
 
 IO.puts "-----------------------------"
 IO.puts "Creating countries and cities"
@@ -45,9 +53,10 @@ end)
 
 IO.puts "---------------"
 IO.puts "Creating sports"
-sports = Enum.map(sport_names, fn sport_name ->
+sports = Enum.map(sports_list, fn {name, code} ->
   SportsnetApi.Repo.insert!(%SportsnetApi.Sports.Sport{
-    name: sport_name
+    name: name,
+    code: code
   })
 end)
 

@@ -5,11 +5,12 @@ defmodule SportsnetApi.Sports.Sport do
 
   schema "sports" do
     field :name, :string
+    field :code, :string
     has_many :posts, SportsnetApi.Social.Post
     has_many :user_sports, SportsnetApi.UserSports.UserSport
     has_many :users, through: [:user_sports, :user]
 
-    timestamps(type: :utc_datetime)
+    timestamps(code: :utc_datetime)
   end
 
   @doc """
@@ -19,9 +20,10 @@ defmodule SportsnetApi.Sports.Sport do
   """
   def changeset(sport, attrs) do
     sport
-    |> cast(attrs, [:name])
+    |> cast(attrs, [:name, :code])
     |> update_change(:name, &String.trim/1)
-    |> validate_required(:name)
+    |> validate_required([:name, :code])
     |> unique_constraint(:name)
+    |> unique_constraint(:code)
   end
 end

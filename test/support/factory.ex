@@ -19,7 +19,8 @@ defmodule SportsnetApi.Factory do
 
   def sport_factory do
     %SportsnetApi.Sports.Sport{
-      name: sequence(:sport_name, &"Sport #{&1}")
+      name: sequence(:sport_name, &"Sport #{&1}"),
+      code: sequence(:sport_name, &"sport_#{&1}")
     }
   end
 

@@ -6,6 +6,7 @@ defmodule SportsnetApi.Schema do
   object :sport do
     field :id, :id
     field :name, :string
+    field :code, :string
   end
 
   query do
