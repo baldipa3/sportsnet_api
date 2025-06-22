@@ -39,9 +39,6 @@ attach:
 	docker attach --sig-proxy=false --detach-keys="ctrl-c" backend
 
 up:
-	docker start backend
-
-up:
 	@echo "Starting backend container..." && \
 	docker start backend
 
