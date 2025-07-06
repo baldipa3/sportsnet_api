@@ -1,4 +1,4 @@
-defmodule SportsnetApi.Resolvers.SportsResolver do
+defmodule SportsnetApiWeb.Resolvers.SportsResolver do
   alias SportsnetApi.Sports
 
   def all_sports(_parent, _args, _resolution) do

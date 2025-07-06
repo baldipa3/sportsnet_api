@@ -1,7 +1,7 @@
-defmodule SportsnetApi.Schema do
+defmodule SportsnetApiWeb.Schema do
   use Absinthe.Schema
 
-  alias SportsnetApi.Resolvers.SportsResolver
+  alias SportsnetApiWeb.Resolvers.SportsResolver
 
   object :sport do
     field :id, :id
