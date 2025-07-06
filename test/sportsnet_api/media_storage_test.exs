@@ -31,8 +31,8 @@ defmodule SportsnetApi.MediaStorageTest do
         content_type: "image/jpeg"
       }
 
-      assert {:ok,  url} = MediaStorage.store_file(upload, 123)
-      assert String.contains?(url, "post_123_test_image.jpg")
+      assert {:ok,  file_info} = MediaStorage.store_file(upload, 123)
+      assert String.contains?(file_info.url, "post_123_test_image.jpg")
 
       File.rm!(tmp_path)
     end

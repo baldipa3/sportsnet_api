@@ -77,9 +77,15 @@ defmodule SportsnetApi.MediaStorage do
 
   def store_file(file, post_id) do
     with {:ok, type} <- validate_file_type(file),
-         :ok <- validate_file_size(file, type),
-         :ok <- validate_duration(file, type) do
-      @adapter.store_file(file, post_id)
+         {:ok, file_info} <- get_file_info(file),
+         :ok <- validate_file_size(file_info, type),
+         :ok <- validate_duration(file, type),
+         {:ok, url} <- @adapter.store_file(file, post_id) do
+      {:ok, %{
+        url: url,
+        media_type: Atom.to_string(type),
+        file_size: file_info.size
+      }}
     end
   end
 
@@ -93,15 +99,17 @@ defmodule SportsnetApi.MediaStorage do
     end
   end
 
-  defp validate_file_size(%Plug.Upload{path: path}, type) do
-    {:ok, %File.Stat{size: size}} = File.stat(path)
+  defp get_file_info(%Plug.Upload{path: path}) do
+    File.stat(path)
+  end
 
+  defp validate_file_size(file_info, type) do
     max_size = case type do
       :image -> @max_image_size
       :video -> @max_video_size
     end
 
-    if size <= max_size do
+    if file_info.size <= max_size do
       :ok
     else
       {:error, "File too large. Max size: #{max_size} bytes"}

@@ -1,6 +1,6 @@
 defmodule SportsnetApi.Social.Media do
   use Ecto.Schema
-  # import Ecto.Changeset
+  import Ecto.Changeset
 
   schema "media" do
     field :url, :string
@@ -15,5 +15,11 @@ defmodule SportsnetApi.Social.Media do
     belongs_to :post, SportsnetApi.Social.Post
 
     timestamps(type: :utc_datetime)
+  end
+
+  def changeset(media, attrs) do
+    media
+    |> cast(attrs, [:url, :media_type, :position, :file_size, :filename, :width, :height, :duration, :post_id])
+    |> validate_required([:url, :media_type, :file_size, :filename, :post_id])
   end
 end
