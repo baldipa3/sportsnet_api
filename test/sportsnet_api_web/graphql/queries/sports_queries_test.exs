@@ -1,4 +1,4 @@
-defmodule SportsnetApiWeb.Graphql.Queries.SportsTest do
+defmodule SportsnetApiWeb.Graphql.Queries.SportsQueriesTest do
   use SportsnetApiWeb.ConnCase, async: true
 
   import SportsnetApi.Factory

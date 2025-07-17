@@ -1,0 +1,192 @@
+defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
+  use SportsnetApiWeb.ConnCase, async: true
+
+  import SportsnetApi.Factory
+  import SportsnetApi.Accounts
+
+  alias Plug.Upload
+
+  describe "createPost mutation" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      city = insert(:city)
+      sport = insert(:sport)
+      token = create_user_api_token(user)
+
+      image_path = "tmp/test_image.jpg"
+      video_path = "tmp/test_video.mp4"
+      File.write!(image_path, "fake image data")
+      File.write!(video_path, "fake video data")
+
+      upload_image = %Upload{
+        filename: "test_image.jpg",
+        path: image_path,
+        content_type: "image/jpeg"
+      }
+
+      upload_video = %Upload{
+        filename: "test_video.mp4",
+        path: video_path,
+        content_type: "video/mp4"
+      }
+
+      on_exit(fn ->
+        Path.wildcard("priv/static/images/*_test_image.jpg") |> Enum.each(&File.rm/1)
+        Path.wildcard("priv/static/images/*_test_video.mp4") |> Enum.each(&File.rm/1)
+      end)
+
+      %{conn: conn, token: token, sport: sport, user: user, city: city, media: [upload_image, upload_video]}
+    end
+
+    test "creates a post with media files", %{conn: conn, token: token, user: user, city: city, sport: sport, media: [image, video]} do
+      mutation = """
+        mutation CreatePost($caption: String!, $userId: ID!, $sportId: ID!, $cityId: ID!, $media: [Upload!]) {
+          createPost(
+            caption: $caption,
+            user_id: $userId,
+            sport_id: $sportId,
+            city_id: $cityId,
+            media: $media
+          ) {
+            id
+            caption
+            media {
+              id
+              url
+              mediaType
+              filename
+            }
+          }
+        }
+      """
+
+      variables = %{
+        "caption" => "A new Post with media",
+        "userId" => user.id,
+        "sportId" => sport.id,
+        "cityId" => city.id,
+        "media" => ["0", "1"]
+      }
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/graphql", %{
+          "query" => mutation,
+          "variables" => Jason.encode!(variables),
+          "0" => image,
+          "1" => video
+        })
+
+      assert %{
+        "data" => %{
+          "createPost" => %{
+            "id" => _id,
+            "caption" => "A new Post with media",
+            "media" => [
+              %{
+                "filename" => "test_video.mp4",
+                "id" => _,
+                "mediaType" => "video",
+                "url" => _
+              },
+              %{
+                "filename" => "test_image.jpg",
+                "id" => _,
+                "mediaType" => "image",
+                "url" => _
+              }
+            ]
+          }
+        }
+      } = json_response(conn, 200)
+    end
+
+    test "creates a post without media files", %{conn: conn, token: token, user: user, city: city, sport: sport} do
+      mutation = """
+        mutation {
+          createPost(
+            caption: "A new Post without media",
+            user_id: #{user.id},
+            sport_id: #{sport.id},
+            city_id: #{city.id},
+          ) {
+            id
+            caption
+          }
+        }
+      """
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{"query" => mutation})
+
+      assert %{
+        "data" => %{
+          "createPost" => %{
+            "id" => _id,
+            "caption" => "A new Post without media"
+          }
+        }
+      } = json_response(conn, 200)
+    end
+
+    test "returns an error with invalid request data", %{conn: conn, token: token} do
+      mutation = """
+        mutation {
+          createPost(
+            caption: "A new Post",
+            user_id: asdf,
+            sport_id: null,
+            city_id: null,
+          ) {
+            id
+            caption
+          }
+        }
+      """
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{"query" => mutation})
+
+      assert %{
+        "errors" => [
+          %{"message" => "Argument \"user_id\" has invalid value asdf."},
+          %{"message" => "Argument \"sport_id\" has invalid value null."},
+          %{"message" => "Argument \"city_id\" has invalid value null."}
+        ]
+      } = json_response(conn, 200)
+    end
+
+    test "returns an error when caption is blank", %{conn: conn, token: token, user: user, city: city, sport: sport} do
+      mutation = """
+        mutation {
+          createPost(
+            caption: "",
+            user_id: #{user.id},
+            sport_id: #{sport.id},
+            city_id: #{city.id},
+          ) {
+            id
+            caption
+          }
+        }
+      """
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{"query" => mutation})
+
+      assert %{
+        "errors" => [
+          %{"message" => "caption can't be blank"},
+        ]
+      } = json_response(conn, 200)
+    end
+  end
+end

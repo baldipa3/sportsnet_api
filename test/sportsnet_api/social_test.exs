@@ -3,6 +3,7 @@ defmodule SportsnetApi.SocialTest do
 
   alias SportsnetApi.Social
   alias SportsnetApi.Social.{Post, Comment}
+  alias Plug.Upload
 
   import SportsnetApi.Factory
 
@@ -36,7 +37,7 @@ defmodule SportsnetApi.SocialTest do
         sport_id: sport.id
       }
 
-      assert {:ok, {%Post{} = post, _media}} = Social.create_post(attrs)
+      assert {:ok, %Post{} = post} = Social.create_post(attrs)
       assert post.caption == "An user post message"
       assert post.id != nil
       assert post.user_id != nil
@@ -70,23 +71,23 @@ defmodule SportsnetApi.SocialTest do
         sport_id: sport.id
       }
 
-      upload_1 = %Plug.Upload{
+      upload_1 = %Upload{
         filename: "test_image.jpg",
         path: tmp_image_path,
         content_type: "image/jpeg"
       }
 
-      upload_2 = %Plug.Upload{
+      upload_2 = %Upload{
         filename: "test_video.mp4",
         path: tmp_video_path,
         content_type: "video/mp4"
       }
 
-      assert {:ok, {%Post{} = post, media_list}} = Social.create_post(attrs, [upload_1, upload_2])
-      assert length(media_list) == 2
+      assert {:ok, %Post{} = post} = Social.create_post(attrs, [upload_1, upload_2])
+      assert length(post.media) == 2
 
-      image = Enum.find(media_list, &(&1.media_type == "image"))
-      video = Enum.find(media_list, &(&1.media_type == "video"))
+      image = Enum.find(post.media, &(&1.media_type == "image"))
+      video = Enum.find(post.media, &(&1.media_type == "video"))
 
       assert post.caption == "An user post message"
       assert image.media_type == "image"
@@ -111,7 +112,7 @@ defmodule SportsnetApi.SocialTest do
         sport_id: sport.id
       }
 
-      upload_invalid = %Plug.Upload{
+      upload_invalid = %Upload{
         filename: "test_document.pdf",
         path: tmp_invalid_path,
         content_type: "application/pdf"
