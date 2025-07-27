@@ -23,8 +23,8 @@ defmodule SportsnetApiWeb.UserSessionController do
             email: user.email,
             token: token,
             onboarding_required: onboarding_required,
-            city_id: user.city_id,
-            default_sport_id: user.default_sport_id
+            city_slug: user.city && user.city.slug,
+            default_sport_slug: user.default_sport && user.default_sport.slug
           }
         })
 

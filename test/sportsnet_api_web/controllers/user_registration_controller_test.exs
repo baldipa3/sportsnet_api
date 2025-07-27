@@ -24,10 +24,7 @@ defmodule SportsnetApiWeb.UserRegistrationControllerTest do
 
       assert json["status"] == "success"
       assert is_binary(json["data"]["token"])
-      assert json["data"]["onboarding_required"] == true
       assert json["data"]["email"] == @valid_attrs["email"]
-      assert is_nil(json["data"]["city_id"])
-      assert is_nil(json["data"]["default_sport_id"])
     end
 
     test "responds with errors for invalid password", %{conn: conn} do

@@ -15,7 +15,7 @@ defmodule SportsnetApiWeb.UserAuth do
   Returns `{:ok, token}` tuple containing the generated authentication token.
   """
 
-  @spec log_in_user(SportsnetApi.Accounts.User) :: {:ok, binary()}
+  @spec log_in_user(map() | User) :: {:ok, binary()}
   def log_in_user(user) do
     token = Accounts.create_user_api_token(user)
 

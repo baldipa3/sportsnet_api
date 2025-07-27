@@ -44,7 +44,6 @@ defmodule SportsnetApiWeb.Auth.UserRegistrationController do
     case Accounts.register_user(user_params) do
       {:ok, user} ->
         token = Accounts.create_user_api_token(user)
-        onboarding_required = Accounts.onboarding_required?(user)
 
         conn
         |> put_status(:created)
@@ -56,7 +55,6 @@ defmodule SportsnetApiWeb.Auth.UserRegistrationController do
             surname: user.surname,
             email: user.email,
             token: token,
-            onboarding_required: onboarding_required
           }
         })
 

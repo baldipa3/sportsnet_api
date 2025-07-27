@@ -41,6 +41,7 @@ defmodule SportsnetApi.Accounts do
   def get_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
     user = Repo.get_by(User, email: email)
+        |> Repo.preload([:city, :default_sport])
     if User.valid_password?(user, password), do: {:ok, user}
   end
 
@@ -359,7 +360,7 @@ defmodule SportsnetApi.Accounts do
     end
   end
 
-  @spec onboarding_required?(User) :: boolean()
+  @spec onboarding_required?(map() | User) :: boolean()
   @doc """
     Check if the user needs onboarding to select City/Sport
   """
