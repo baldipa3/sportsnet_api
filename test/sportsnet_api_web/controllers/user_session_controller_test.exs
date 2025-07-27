@@ -21,6 +21,8 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
       assert json["status"] == "success"
       assert is_binary(json["data"]["token"])
       assert json["data"]["onboarding_required"] == false
+      assert json["data"]["city_id"] != nil
+      assert json["data"]["default_sport_id"] != nil
     end
 
     test "log_in the user requires onboarding without city/sport", %{conn: conn} do

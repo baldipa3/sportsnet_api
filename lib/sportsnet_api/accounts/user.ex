@@ -23,7 +23,7 @@ defmodule SportsnetApi.Accounts.User do
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:name, :surname, :email])
+    |> cast(attrs, [:name, :surname, :email, :city_id, :default_sport_id])
     |> validate_required([:name, :surname, :email])
   end
 
