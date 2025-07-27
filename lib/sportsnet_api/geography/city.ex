@@ -4,6 +4,7 @@ defmodule SportsnetApi.Geography.City do
 
   schema "cities" do
     field :name, :string
+    field :slug, :string
 
     belongs_to :country, SportsnetApi.Geography.Country
 
@@ -21,10 +22,11 @@ defmodule SportsnetApi.Geography.City do
 
   def changeset(city, attrs) do
     city
-    |> cast(attrs, [:name, :country_id])
+    |> cast(attrs, [:name, :country_id, :slug])
     |> update_change(:name, &String.trim/1)
-    |> validate_required([:name, :country_id])
+    |> validate_required([:name, :country_id, :slug])
     |> unique_constraint([:name, :country_id])
+    |> unique_constraint([:slug])
     |> foreign_key_constraint(:country_id)
   end
 end

@@ -60,7 +60,7 @@ defmodule SportsnetApi.GeographyTest do
   describe "create_city/1" do
     test "creates cities with valid attributes" do
       {:ok, country} = country_fixture()
-      attrs = %{name: "Buenos Aires", country_id: country.id}
+      attrs = %{name: "Buenos Aires", country_id: country.id, slug: "buenos_aires"}
 
       assert {:ok, %City{} = city} = Geography.create_city(attrs)
       assert city.name == "Buenos Aires"
@@ -86,7 +86,7 @@ defmodule SportsnetApi.GeographyTest do
 
     test "enforce uniq city name" do
        {:ok, country} = country_fixture()
-       attrs = %{name: "Buenos Aires", country_id: country.id}
+       attrs = %{name: "Buenos Aires", country_id: country.id, slug: "buenos_aires"}
 
        assert {:ok, _city} = Geography.create_city(attrs)
        assert {:error, %Ecto.Changeset{} = changeset} = Geography.create_city(attrs)
@@ -95,7 +95,7 @@ defmodule SportsnetApi.GeographyTest do
 
     test "trims whitespace from city name" do
       {:ok, country} = country_fixture()
-      attrs = %{name: "     Buenos Aires   ", country_id: country.id}
+      attrs = %{name: "     Buenos Aires   ", country_id: country.id, slug: "buenos_aires"}
 
       assert {:ok, %City{} = city} = Geography.create_city(attrs)
       assert city.name == "Buenos Aires"

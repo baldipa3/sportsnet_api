@@ -19,7 +19,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SportsQueriesTest do
         allSports {
           id
           name
-          code
+          slug
         }
       }
       """
@@ -31,9 +31,9 @@ defmodule SportsnetApiWeb.Graphql.Queries.SportsQueriesTest do
 
       assert %{"data" =>  %{"allSports" => sports}} = json_response(conn, 200)
       assert [
-        %{"id" => _id_1, "name" => _name_1, "code" => _code_1},
-        %{"id" => _id_2, "name" => _name_2, "code" => _code_2},
-        %{"id" => _id_3, "name" => _name_3, "code" => _code_3}
+        %{"id" => _id_1, "name" => _name_1, "slug" => _slug_1},
+        %{"id" => _id_2, "name" => _name_2, "slug" => _slug_2},
+        %{"id" => _id_3, "name" => _name_3, "slug" => _slug_3}
       ] = sports
     end
 
@@ -43,7 +43,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SportsQueriesTest do
         allSports {
           id
           name
-          code
+          slug
         }
       }
       """
@@ -65,7 +65,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SportsQueriesTest do
         allSports {
           id
           name
-          code
+          slug
         }
       }
       """

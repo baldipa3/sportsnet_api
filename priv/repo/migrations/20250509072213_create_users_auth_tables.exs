@@ -8,11 +8,16 @@ defmodule SportsnetApi.Repo.Migrations.CreateUsersAuthTables do
       add :email, :citext, null: false
       add :hashed_password, :string, null: false
       add :confirmed_at, :utc_datetime
+      add :name, :string
+      add :surname, :string
+      add :city_id, references(:cities, on_delete: :restrict)
+      add :default_sport_id, references(:sports, on_delete: :nilify_all)
 
       timestamps(type: :utc_datetime)
     end
 
     create unique_index(:users, [:email])
+    create index(:users, [:city_id])
 
     create table(:users_tokens) do
       add :user_id, references(:users, on_delete: :delete_all), null: false

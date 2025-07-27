@@ -4,12 +4,12 @@ defmodule SportsnetApi.Repo.Migrations.CreateSports do
   def change do
     create table(:sports) do
       add :name, :string, null: false
-      add :code, :string, null: false
+      add :slug, :string, null: false
 
-      timestamps(code: :utc_datetime)
+      timestamps(type: :utc_datetime)
     end
 
     create unique_index(:sports, [:name])
-    create unique_index(:sports, [:code])
+    create unique_index(:sports, [:slug])
   end
 end

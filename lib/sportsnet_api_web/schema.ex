@@ -9,7 +9,7 @@ defmodule SportsnetApiWeb.Schema do
   object :sport do
     field :id, :id
     field :name, :string
-    field :code, :string
+    field :slug, :string
   end
 
   object :media do

@@ -20,9 +20,24 @@ IO.puts "Removing Users"
 SportsnetApi.Repo.delete_all(SportsnetApi.Accounts.User)
 
 countries_and_cities = [
-  {"Argentina", ["Buenos Aires", "Cordoba", "Mendoza", "Santa Fe"]},
-  {"Spain", ["Madrid", "Barcelona", "Sevilla", "Valencia"]},
-  {"United Kingdom", ["London", "Liverpool", "Leeds", "Manchester"]},
+  {"Argentina", [
+    {"Buenos Aires", "buenos_aires"},
+    {"Cordoba", "cordoba"},
+    {"Mendoza", "mendoza"},
+    {"Santa Fe", "santa_fe"}
+  ]},
+  {"Spain", [
+    {"Madrid", "madrid"},
+    {"Barcelona", "barcelona"},
+    {"Sevilla", "sevilla"},
+    {"Valencia", "valencia"}
+  ]},
+  {"United Kingdom", [
+    {"London", "london"},
+    {"Liverpool", "liverpool"},
+    {"Leeds", "leeds"},
+    {"Manchester", "manchester"}
+  ]}
 ]
 
 sports_list = [
@@ -44,19 +59,21 @@ cities = Enum.flat_map(countries_and_cities, fn {country_name, city_names} ->
   })
 
   Enum.map(city_names, fn city_name ->
-  SportsnetApi.Repo.insert!(%SportsnetApi.Geography.City{
-    name: city_name,
-    country_id: country.id
-  })
+    {name, slug} = city_name
+    SportsnetApi.Repo.insert!(%SportsnetApi.Geography.City{
+      name: name,
+      slug: slug,
+      country_id: country.id
+    })
   end)
 end)
 
 IO.puts "---------------"
 IO.puts "Creating sports"
-sports = Enum.map(sports_list, fn {name, code} ->
+sports = Enum.map(sports_list, fn {name, slug} ->
   SportsnetApi.Repo.insert!(%SportsnetApi.Sports.Sport{
     name: name,
-    code: code
+    slug: slug
   })
 end)
 
