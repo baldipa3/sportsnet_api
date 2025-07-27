@@ -1,30 +1,42 @@
 defmodule SportsnetApiWeb.UserSessionControllerTest do
   use SportsnetApiWeb.ConnCase, async: true
 
-  import SportsnetApi.AccountsFixtures
   alias SportsnetApi.Accounts
 
-  @valid_email unique_user_email()
-  @valid_password "strongpassword123"
+  import SportsnetApi.Factory
 
   setup %{conn: conn} do
-    user = user_fixture(%{email: @valid_email, password: @valid_password})
+    user = insert(:user, city: build(:city), default_sport: build(:sport))
 
     %{user: user, conn: conn}
   end
 
   describe "POST /users/log_in" do
-    test "log_in the user and responds with json", %{conn: conn} do
-      params = %{email: @valid_email, password: @valid_password}
+    test "log_in the user and responds with json", %{conn: conn, user: user} do
+
+      params = %{email: user.email, password: "Password123"}
       conn = post(conn, ~p"/users/log_in", %{"user" => params})
       json = json_response(conn, 200)
 
       assert json["status"] == "success"
       assert is_binary(json["data"]["token"])
+      assert json["data"]["onboarding_required"] == false
+    end
+
+    test "log_in the user requires onboarding without city/sport", %{conn: conn} do
+      user = insert(:user)
+
+      params = %{email: user.email, password: "Password123"}
+      conn = post(conn, ~p"/users/log_in", %{"user" => params})
+      json = json_response(conn, 200)
+
+      assert json["status"] == "success"
+      assert is_binary(json["data"]["token"])
+      assert json["data"]["onboarding_required"] == true
     end
 
     test "responds with errors for invalid email", %{conn: conn} do
-      params = %{email: "invalid.email@example.com", password: @valid_password}
+      params = %{email: "invalid.email@example.com", password: "Password123"}
       conn = post(conn, ~p"/users/log_in", %{"user" => params})
       json = json_response(conn, 401)
 
@@ -32,8 +44,8 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
       assert json["errors"] == "invalid email or password"
     end
 
-    test "responds with errors for invalid password", %{conn: conn} do
-      params = %{email: @valid_email, password: "invalid-password"}
+    test "responds with errors for invalid password", %{conn: conn, user: user} do
+      params = %{email: user.email, password: "invalid-password"}
       conn = post(conn, ~p"/users/log_in", %{"user" => params})
       json = json_response(conn, 401)
 
@@ -45,6 +57,8 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
   describe "DELETE /users/log_out" do
     test "log_out the user removing the token", %{conn: conn, user: user} do
       token = Accounts.create_user_api_token(user)
+
+      IO.inspect(token)
 
       conn =
         conn

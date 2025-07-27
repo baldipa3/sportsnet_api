@@ -358,4 +358,12 @@ defmodule SportsnetApi.Accounts do
       _ -> :error
     end
   end
+
+  @spec onboarding_required?(User) :: boolean()
+  @doc """
+    Check if the user needs onboarding to select City/Sport
+  """
+  def onboarding_required?(user) do
+    is_nil(user.city_id) || is_nil(user.default_sport_id)
+  end
 end

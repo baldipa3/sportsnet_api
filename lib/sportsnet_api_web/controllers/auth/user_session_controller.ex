@@ -10,13 +10,15 @@ defmodule SportsnetApiWeb.UserSessionController do
     case Accounts.get_user_by_email_and_password(email, password) do
       {:ok, user} ->
         {:ok, token} = UserAuth.log_in_user(user)
+        onboarding_required = Accounts.onboarding_required?(user)
 
         conn
         |> put_status(:ok)
         |> json(%{
           status: "success",
           data: %{
-            token: token
+            token: token,
+            onboarding_required: onboarding_required
           }
         })
 

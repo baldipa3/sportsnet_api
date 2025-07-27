@@ -4,8 +4,11 @@ defmodule SportsnetApi.Geography.City do
 
   schema "cities" do
     field :name, :string
+
     belongs_to :country, SportsnetApi.Geography.Country
+
     has_many :posts, SportsnetApi.Social.Post
+    has_many :users, SportsnetApi.Accounts.User
 
     timestamps(type: :utc_datetime)
   end
