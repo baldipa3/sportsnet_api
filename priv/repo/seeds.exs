@@ -37,6 +37,36 @@ countries_and_cities = [
     {"Liverpool", "liverpool"},
     {"Leeds", "leeds"},
     {"Manchester", "manchester"}
+  ]},
+  {"France", [
+    {"Paris", "paris"},
+    {"Lyon", "lyon"},
+    {"Marseille", "marseille"},
+    {"Toulouse", "toulouse"}
+  ]},
+  {"Italy", [
+    {"Rome", "rome"},
+    {"Milan", "milan"},
+    {"Naples", "naples"},
+    {"Florence", "florence"}
+  ]},
+  {"Germany", [
+    {"Berlin", "berlin"},
+    {"Munich", "munich"},
+    {"Frankfurt", "frankfurt"},
+    {"Hamburg", "hamburg"}
+  ]},
+  {"Canada", [
+    {"Toronto", "toronto"},
+    {"Vancouver", "vancouver"},
+    {"Montreal", "montreal"},
+    {"Calgary", "calgary"}
+  ]},
+  {"Australia", [
+    {"Sydney", "sydney"},
+    {"Melbourne", "melbourne"},
+    {"Brisbane", "brisbane"},
+    {"Perth", "perth"}
   ]}
 ]
 

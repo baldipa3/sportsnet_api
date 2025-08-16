@@ -41,7 +41,7 @@ defmodule SportsnetApi.Social do
       iex> create_post(%{caption: "Valid post", user_id: 1, sport_id: 1, city_id: 1}, files)
       {:error, "Unsupported file extension .pdf"}
   """
-  @spec create_post(map(), list()) :: {:ok, Post.t()} | {:error, Ecto.Changeset.t() | String.t()}
+  @spec create_post(map(), list()) :: {:ok, Post} | {:error, Ecto.Changeset.t() | String.t()}
   def create_post(attrs, files \\ []) do
     Repo.transaction(fn ->
       with {:ok, post} <- insert_post(attrs),

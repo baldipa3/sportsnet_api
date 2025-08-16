@@ -43,4 +43,15 @@ defmodule SportsnetApi.Geography do
     |> City.changeset(attrs)
     |> Repo.insert()
   end
+
+  def list_countries_with_cities do
+    Country
+    |> Repo.all(preload: [:cities])
+  end
+
+  def list_cities(country_id) do
+    City
+    |> where(country_id: ^country_id)
+    |> Repo.all()
+  end
 end
