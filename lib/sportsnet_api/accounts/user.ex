@@ -174,4 +174,16 @@ defmodule SportsnetApi.Accounts.User do
       add_error(changeset, :current_password, "is not valid")
     end
   end
+
+  @doc """
+  Onboarding changeset to setup a city and a default sport on user
+  """
+
+  def onboarding_changeset(user, attrs) do
+    user
+    |> cast(attrs, [:city_id, :default_sport_id])
+    |> validate_required([:city_id, :default_sport_id])
+    |> foreign_key_constraint(:city_id, name: :users_city_id_fkey, message: "City does not exist")
+    |> foreign_key_constraint(:default_sport_id, name: :users_default_sport_id_fkey, message: "Sport does not exist")
+  end
 end

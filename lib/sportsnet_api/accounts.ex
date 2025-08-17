@@ -360,11 +360,24 @@ defmodule SportsnetApi.Accounts do
     end
   end
 
-  @spec onboarding_required?(map() | User) :: boolean()
   @doc """
-    Check if the user needs onboarding to select City/Sport
+  Check if the user needs onboarding to select City/Sport
   """
+  @spec onboarding_required?(map() | User) :: boolean()
   def onboarding_required?(user) do
     is_nil(user.city_id) || is_nil(user.default_sport_id)
+  end
+
+  @doc """
+  Updates the city preference for a user.
+
+  This function updates the user's `city_id` field to associate them with a new city.
+  The city must exist in the database for the update to succeed.
+  """
+
+  def complete_user_onboarding(user, city_id, default_sport_id) do
+    user
+    |> User.onboarding_changeset(%{city_id: city_id, default_sport_id: default_sport_id})
+    |> Repo.update()
   end
 end

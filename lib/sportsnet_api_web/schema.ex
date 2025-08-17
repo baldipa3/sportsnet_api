@@ -4,6 +4,7 @@ defmodule SportsnetApiWeb.Schema do
   alias SportsnetApiWeb.Resolvers.SportsResolver
   alias SportsnetApiWeb.Resolvers.SocialResolver
   alias SportsnetApiWeb.Resolvers.GeographyResolver
+  alias SportsnetApiWeb.Resolvers.AccountsResolver
 
   import_types Absinthe.Plug.Types
 
@@ -26,6 +27,15 @@ defmodule SportsnetApiWeb.Schema do
     field :id, :id
     field :name, :string
     field :slug, :string
+  end
+
+  object :user do
+    field :id, :id
+    field :city_id, :id
+    field :default_sport_id, :id
+    field :name, :string
+    field :surname, :string
+    field :email, :string
   end
 
   object :media do
@@ -66,6 +76,13 @@ defmodule SportsnetApiWeb.Schema do
       arg :city_id, non_null(:id)
       arg :media, list_of(non_null(:upload))
       resolve(&SocialResolver.create_post/3)
+    end
+
+    @desc "Updates user city"
+    field :complete_user_onboarding, :user do
+      arg :city_id, non_null(:id)
+      arg :default_sport_id, non_null(:id)
+      resolve(&AccountsResolver.complete_user_onboarding/3)
     end
   end
 end
