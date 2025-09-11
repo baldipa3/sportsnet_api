@@ -1,6 +1,7 @@
 defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
   use SportsnetApiWeb.ConnCase, async: true
 
+  import Absinthe.Relay.Node
   import SportsnetApi.Factory
   import SportsnetApi.Accounts
 
@@ -12,6 +13,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       city = insert(:city)
       sport = insert(:sport)
       token = create_user_api_token(user)
+      encoded_user_id = to_global_id("User", user.id)
+      encoded_city_id = to_global_id("City", city.id)
+      encoded_sport_id = to_global_id("Sport", sport.id)
 
       image_path = "tmp/test_image.jpg"
       video_path = "tmp/test_video.mp4"
@@ -35,10 +39,17 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         Path.wildcard("priv/static/images/*_test_video.mp4") |> Enum.each(&File.rm/1)
       end)
 
-      %{conn: conn, token: token, sport: sport, user: user, city: city, media: [upload_image, upload_video]}
+      %{
+        conn: conn,
+        token: token,
+        encoded_sport_id: encoded_sport_id,
+        encoded_user_id: encoded_user_id,
+        encoded_city_id: encoded_city_id,
+        media: [upload_image, upload_video]
+      }
     end
 
-    test "creates a post with media files", %{conn: conn, token: token, user: user, city: city, sport: sport, media: [image, video]} do
+    test "creates a post with media files", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video]} do
       mutation = """
         mutation CreatePost($caption: String!, $userId: ID!, $sportId: ID!, $cityId: ID!, $media: [Upload!]) {
           createPost(
@@ -59,12 +70,11 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
           }
         }
       """
-
       variables = %{
         "caption" => "A new Post with media",
-        "userId" => user.id,
-        "sportId" => sport.id,
-        "cityId" => city.id,
+        "userId" => encoded_user_id,
+        "sportId" => encoded_sport_id,
+        "cityId" => encoded_city_id,
         "media" => ["0", "1"]
       }
 
@@ -103,14 +113,14 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       } = json_response(conn, 200)
     end
 
-    test "creates a post without media files", %{conn: conn, token: token, user: user, city: city, sport: sport} do
+    test "creates a post without media files", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
       mutation = """
         mutation {
           createPost(
             caption: "A new Post without media",
-            user_id: #{user.id},
-            sport_id: #{sport.id},
-            city_id: #{city.id},
+            user_id: "#{encoded_user_id}",
+            sport_id: "#{encoded_sport_id}",
+            city_id: "#{encoded_city_id}"
           ) {
             id
             caption
@@ -140,7 +150,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
             caption: "A new Post",
             user_id: asdf,
             sport_id: null,
-            city_id: null,
+            city_id: null
           ) {
             id
             caption
@@ -162,14 +172,14 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       } = json_response(conn, 200)
     end
 
-    test "returns an error when caption is blank", %{conn: conn, token: token, user: user, city: city, sport: sport} do
+    test "returns an error when caption is blank", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
       mutation = """
         mutation {
           createPost(
             caption: "",
-            user_id: #{user.id},
-            sport_id: #{sport.id},
-            city_id: #{city.id},
+            user_id: "#{encoded_user_id}",
+            sport_id: "#{encoded_sport_id}",
+            city_id: "#{encoded_city_id}"
           ) {
             id
             caption

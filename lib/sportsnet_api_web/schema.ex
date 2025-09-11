@@ -1,5 +1,6 @@
 defmodule SportsnetApiWeb.Schema do
   use Absinthe.Schema
+  use Absinthe.Relay.Schema, :modern
 
   alias SportsnetApiWeb.Resolvers.SportsResolver
   alias SportsnetApiWeb.Resolvers.SocialResolver
@@ -8,46 +9,70 @@ defmodule SportsnetApiWeb.Schema do
 
   import_types Absinthe.Plug.Types
 
-  object :country do
-    field :id, :id
-    field :name, :string
-    field :code, :string
+  node interface do
+    resolve_type fn
+      %SportsnetApi.Geography.Country{}, _ -> :country
+      %SportsnetApi.Geography.City{}, _ -> :city
+      %SportsnetApi.Sports.Sport{}, _ -> :sport
+      %SportsnetApi.Accounts.User{}, _ -> :user
+      %SportsnetApi.Social.Media{}, _ -> :media
+      %SportsnetApi.Social.Post{}, _ -> :post
+      _, _ ->
+        nil
+    end
+  end
+
+  node object :country do
+    field :name, non_null(:string)
+    field :code, non_null(:string)
 
     field :cities, non_null(list_of(non_null(:city))) do
       resolve(&GeographyResolver.cities_for_country/3)
     end
   end
 
-  object :city do
-    field :id, :id
-    field :name, :string
+  node object :city do
+    field :name, non_null(:string)
+    field :slug, non_null(:string)
   end
 
-  object :sport do
-    field :id, :id
-    field :name, :string
-    field :slug, :string
+  node object :sport do
+    field :name, non_null(:string)
+    field :slug, non_null(:string)
   end
 
-  object :user do
-    field :id, :id
-    field :city_id, :id
-    field :default_sport_id, :id
-    field :name, :string
-    field :surname, :string
-    field :email, :string
+  node object :user do
+    field :name, non_null(:string)
+    field :surname, non_null(:string)
+    field :email, non_null(:string)
+
+    field :city, :city do
+      resolve fn user, _, _ ->
+        case user.city do
+          %SportsnetApi.Geography.City{} = city -> {:ok, city}
+          _ -> {:ok, nil}
+        end
+      end
+    end
+
+    field :default_sport, :sport do
+      resolve fn user, _, _ ->
+        case user.default_sport do
+          %SportsnetApi.Sports.Sport{} = sport -> {:ok, sport}
+          _ -> {:ok, nil}
+        end
+      end
+    end
   end
 
-  object :media do
-    field :id, :id
+  node object :media do
     field :url, :string
     field :media_type, :string
     field :filename, :string
     field :position, :integer
   end
 
-  object :post do
-    field :id, :id
+  node object :post do
     field :caption, :string
     field :user_id, :id
     field :sport_id, :id

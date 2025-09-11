@@ -5,6 +5,7 @@
 # Set of commands to manage API mode of the app
 
 ARGS=$(filter-out $@,$(MAKECMDGOALS))
+FRONTEND_DIR = ../sportsnet
 
 .PHONY: test
 
@@ -52,3 +53,10 @@ down:
 
 test:
 	docker exec -it backend iex -S mix test --trace $(ARGS)
+
+gen-schema:
+	echo "Generating GraphQL schema..." && \
+	docker exec backend mix absinthe.schema.sdl --schema SportsnetApiWeb.Schema 2>/dev/null && \
+	docker cp backend:/app/schema.graphql ${FRONTEND_DIR}/src/schema.graphql && \
+	docker exec backend rm /app/schema.graphql && \
+	echo "Schema copied to frontend src/schema.graphql"

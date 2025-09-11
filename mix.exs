@@ -55,7 +55,8 @@ defmodule SportsnetApi.MixProject do
       {:ex_machina, "~> 2.7", only: [:test]},
       {:faker, "~> 0.17", only: [:dev, :test]},
       {:absinthe, "~> 1.6"},
-      {:absinthe_plug, "~> 1.5"}
+      {:absinthe_plug, "~> 1.5"},
+      {:absinthe_relay, "~> 1.5.2"}
     ]
   end
 

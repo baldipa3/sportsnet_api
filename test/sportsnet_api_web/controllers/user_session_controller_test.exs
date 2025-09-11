@@ -60,8 +60,6 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
     test "log_out the user removing the token", %{conn: conn, user: user} do
       token = Accounts.create_user_api_token(user)
 
-      IO.inspect(token)
-
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
