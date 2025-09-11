@@ -7,6 +7,9 @@ SportsnetApi.Repo.delete_all(SportsnetApi.Social.Comment)
 IO.puts "Removing Posts"
 SportsnetApi.Repo.delete_all(SportsnetApi.Social.Post)
 
+IO.puts "Removing Users"
+SportsnetApi.Repo.delete_all(SportsnetApi.Accounts.User)
+
 IO.puts "Removing sports"
 SportsnetApi.Repo.delete_all(SportsnetApi.Sports.Sport)
 
@@ -16,8 +19,6 @@ SportsnetApi.Repo.delete_all(SportsnetApi.Geography.City)
 IO.puts "Removing countries"
 SportsnetApi.Repo.delete_all(SportsnetApi.Geography.Country)
 
-IO.puts "Removing Users"
-SportsnetApi.Repo.delete_all(SportsnetApi.Accounts.User)
 
 countries_and_cities = [
   {"Argentina", [
