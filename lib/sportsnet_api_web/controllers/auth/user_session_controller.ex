@@ -1,6 +1,7 @@
 defmodule SportsnetApiWeb.UserSessionController do
   use SportsnetApiWeb, :controller
 
+  import Absinthe.Relay.Node
   alias SportsnetApi.Accounts
   alias SportsnetApiWeb.UserAuth
 
@@ -22,6 +23,8 @@ defmodule SportsnetApiWeb.UserSessionController do
             surname: user.surname,
             email: user.email,
             token: token,
+            city_id: to_global_id("City", user.city_id),
+            default_sport_id: to_global_id("Sport", user.default_sport_id),
             onboarding_required: onboarding_required,
             city_slug: user.city && user.city.slug,
             default_sport_slug: user.default_sport && user.default_sport.slug
