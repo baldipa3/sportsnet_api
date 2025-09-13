@@ -46,4 +46,23 @@ defmodule SportsnetApi.Factory do
       sport: build(:sport)
     }
   end
+
+  def post_with_media_factory(attrs \\ %{}) do
+    post = build(:post, attrs)
+    media_files = insert_list(2, :media, %{post_id: post.id})
+
+    %{post | media: media_files}
+  end
+
+  def media_factory do
+    %SportsnetApi.Social.Media{
+      url: "images/#{System.system_time(:second)}_post_#{sequence(:post_id, & &1)}_#{Faker.File.file_name(:image)}",
+      media_type: "image",
+      position: sequence(:position, & &1),
+      file_size: Enum.random(1000..5000000),
+      filename: Faker.File.file_name(:image),
+      width: 1080,
+      height: 1080,
+    }
+  end
 end

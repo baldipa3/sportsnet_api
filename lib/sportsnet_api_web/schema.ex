@@ -72,12 +72,17 @@ defmodule SportsnetApiWeb.Schema do
     field :position, :integer
   end
 
+  node object :comment do
+    field :content, :string
+  end
+
   node object :post do
     field :caption, :string
     field :user_id, :id
     field :sport_id, :id
     field :city_id, :id
     field :media, list_of(:media)
+    field :comments, list_of(:comment)
   end
 
   query do
@@ -89,6 +94,13 @@ defmodule SportsnetApiWeb.Schema do
     @desc "Get all countries with their cities"
     field :countries_with_cities, non_null(list_of(non_null(:country))) do
       resolve(&GeographyResolver.countries_with_cities/3)
+    end
+
+    @desc "Get posts for a given city/sport combination"
+    field :posts_by_city_and_sport, non_null(list_of(non_null(:post))) do
+      arg :city_id, :id
+      arg :sport_id, :id
+      resolve(&SocialResolver.posts_by_city_and_sport/3)
     end
   end
 

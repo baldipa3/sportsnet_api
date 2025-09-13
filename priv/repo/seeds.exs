@@ -1,6 +1,11 @@
 require Logger
 Logger.configure(level: :info)
 
+Code.require_file("web_media_seeder.ex", __DIR__)
+
+IO.puts "Removing Media"
+SportsnetApi.Repo.delete_all(SportsnetApi.Social.Media)
+
 IO.puts "Removing Comments"
 SportsnetApi.Repo.delete_all(SportsnetApi.Social.Comment)
 
@@ -125,14 +130,26 @@ IO.puts "Creating users"
 })
 
 IO.puts "--------------"
-IO.puts "Creating posts"
-posts = Enum.map(1..100, fn _x ->
-  SportsnetApi.Repo.insert!(%SportsnetApi.Social.Post{
-    caption: Faker.Lorem.paragraph(),
+IO.puts "Creating posts with real sports media"
+IO.puts "--------------"
+
+posts = Enum.map(1..50, fn x ->
+  sport = Enum.random(sports)
+  city = Enum.random(cities)
+
+  IO.write("Creating post #{x} (#{sport.name} in #{city.name})...")
+
+  post = SportsnetApi.Repo.insert!(%SportsnetApi.Social.Post{
+    caption: WebMediaSeeder.get_sport_caption(sport.name, city.name),
     user: user_1,
-    city: Enum.random(cities),
-    sport: Enum.random(sports)
+    city: city,
+    sport: sport
   })
+
+  media_records = WebMediaSeeder.create_media_records_for_post(post, sport.slug)
+
+  IO.puts(" ✓ (#{length(media_records)} media files)")
+  post
 end)
 
 IO.puts "--------------"
@@ -147,3 +164,5 @@ Enum.map(posts, fn post ->
     })
   end)
 end)
+
+IO.puts "✅ Seed completed successfully!"

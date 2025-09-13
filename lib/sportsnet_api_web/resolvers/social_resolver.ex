@@ -33,4 +33,24 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
         end
     end
   end
+
+  @spec posts_by_city_and_sport(any(), any(), any()) ::
+          nil | {:error, binary()} | {:ok, nil | %{id: binary(), type: atom()}}
+  def posts_by_city_and_sport(_parent, args, _resolution) do
+    with  {:ok, %{type: :city, id: city_id_str}} <- from_global_id(args.city_id, SportsnetApiWeb.Schema),
+          {:ok, %{type: :sport, id: sport_id_str}} <- from_global_id(args.sport_id, SportsnetApiWeb.Schema),
+          city_id <- String.to_integer(city_id_str),
+          sport_id <- String.to_integer(sport_id_str) do
+
+      # case Social.create_post(attrs, files) do
+      #   {:ok, post} ->
+      #     {:ok, post}
+      #   {:error, %Ecto.Changeset{} = changeset} ->
+      #     {:error, format_changeset_errors(changeset)}
+      #   {:error, reason} ->
+      #     {:error, reason}
+      # end
+    end
+
+  end
 end

@@ -70,6 +70,15 @@ defmodule SportsnetApi.Social do
     |> Repo.insert()
   end
 
+
+
+  @doc """
+  Query posts for a given city and sport on a user
+  """
+  def fetch_posts_by_city_and_sport(city_id, sport_id) do
+
+  end
+
   defp insert_post(attrs) do
     %Post{}
     |> Post.changeset(attrs)
