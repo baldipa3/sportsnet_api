@@ -70,8 +70,6 @@ defmodule SportsnetApi.Social do
     |> Repo.insert()
   end
 
-
-
   @doc """
   Query posts for a given city and sport on a user
   """
