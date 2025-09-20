@@ -152,6 +152,17 @@ posts = Enum.map(1..50, fn x ->
   post
 end)
 
+IO.write("Creating extra post")
+sport = SportsnetApi.Repo.get_by(SportsnetApi.Sports.Sport, slug: "football")
+city = SportsnetApi.Repo.get_by(SportsnetApi.Geography.City, slug: "buenos_aires")
+post = SportsnetApi.Repo.insert!(%SportsnetApi.Social.Post{
+  caption: "Football post for testing",
+  user: user_1,
+  city: city,
+  sport: sport
+})
+media_records = WebMediaSeeder.create_media_records_for_post(post, "football")
+
 IO.puts "--------------"
 IO.puts "Creating comments"
 IO.puts "--------------"

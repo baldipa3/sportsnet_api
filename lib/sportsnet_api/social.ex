@@ -76,7 +76,10 @@ defmodule SportsnetApi.Social do
   Query posts for a given city and sport on a user
   """
   def fetch_posts_by_city_and_sport(city_id, sport_id) do
-
+    Post
+    |> where(city_id: ^city_id, sport_id: ^sport_id)
+    |> preload([:comments, :media])
+    |> Repo.all()
   end
 
   defp insert_post(attrs) do

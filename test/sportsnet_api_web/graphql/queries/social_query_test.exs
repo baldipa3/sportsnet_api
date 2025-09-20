@@ -16,7 +16,10 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
     end
 
     test "return posts by city and sport when authenticated", %{conn: conn, token: token, user: user, city: city, sport: sport} do
-      insert(:post_with_media, %{user: user, city: city, sport: sport})
+      second_sport = insert(:sport)
+      second_city = insert(:city)
+      post = insert(:post_with_media, %{user: user, city: city, sport: sport})
+      insert(:post_with_media, %{user: user, city: second_city, sport: second_sport})
 
       query = """
         query postsByCityAndSport($cityId: ID!, $sportId: ID!) {
@@ -48,44 +51,27 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
 
       assert %{"data" =>  %{"postsByCityAndSport" => posts}} = json_response(conn, 200)
 
-      IO.inspect(posts, label: "POSTS:")
+      assert length(posts) == 1
+
+      assert [%{
+        "id" => post_id,
+        "caption" => caption,
+        "comments" => comments,
+        "media" => media
+        }] = posts
+
+      expected_post_id = to_global_id("Post", post.id)
+      assert post_id == expected_post_id
+
+      assert is_binary(caption)
+      assert is_list(comments)
+      assert is_list(media)
+
+      Enum.each(media, fn media_item ->
+        assert %{"url" => url} = media_item
+        assert is_binary(url)
+        assert String.contains?(url, "images/")
+      end)
     end
-
-    # test "returns an empty list when no sports are found", %{conn: conn, token: token} do
-    #   query = """
-    #   {
-    #     allSports {
-    #       id
-    #       name
-    #       slug
-    #     }
-    #   }
-    #   """
-
-    #   conn =
-    #     conn
-    #     |> put_req_header("authorization", "Bearer #{token}")
-    #     |> post("/graphql", %{query: query})
-
-    #   assert %{"data" =>  %{"allSports" => sports}} = json_response(conn, 200)
-    #   assert [] = sports
-    # end
-
-    # test "returns 401 when no authenticated", %{conn: conn} do
-    #   insert_list(3, :sport)
-
-    #   query = """
-    #   {
-    #     allSports {
-    #       id
-    #       name
-    #       slug
-    #     }
-    #   }
-    #   """
-    #   conn = post(conn, "/graphql", %{query: query})
-
-    #   assert response(conn, 401)
-    # end
   end
 end
