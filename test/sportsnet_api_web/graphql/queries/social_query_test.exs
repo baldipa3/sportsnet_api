@@ -26,6 +26,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
           postsByCityAndSport(cityId: $cityId, sportId: $sportId) {
             id
             caption
+            insertedAt
             comments {
               content
             }
@@ -57,7 +58,8 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         "id" => post_id,
         "caption" => caption,
         "comments" => comments,
-        "media" => media
+        "media" => media,
+        "insertedAt" => inserted_at
         }] = posts
 
       expected_post_id = to_global_id("Post", post.id)
@@ -66,6 +68,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       assert is_binary(caption)
       assert is_list(comments)
       assert is_list(media)
+      assert is_binary(inserted_at)
 
       Enum.each(media, fn media_item ->
         assert %{"url" => url} = media_item

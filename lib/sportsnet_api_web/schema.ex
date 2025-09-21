@@ -8,6 +8,7 @@ defmodule SportsnetApiWeb.Schema do
   alias SportsnetApiWeb.Resolvers.AccountsResolver
 
   import_types Absinthe.Plug.Types
+  import_types Absinthe.Type.Custom
 
   node interface do
     resolve_type fn
@@ -81,6 +82,7 @@ defmodule SportsnetApiWeb.Schema do
     field :user_id, :id
     field :sport_id, :id
     field :city_id, :id
+    field :inserted_at, :datetime
     field :media, list_of(:media)
     field :comments, list_of(:comment)
   end
