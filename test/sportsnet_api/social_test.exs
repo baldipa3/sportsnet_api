@@ -2,13 +2,14 @@ defmodule SportsnetApi.SocialTest do
   use SportsnetApi.DataCase
 
   alias SportsnetApi.Social
-  alias SportsnetApi.Social.{Post, Comment}
+  alias SportsnetApi.Social.{Post, Comment, Like}
   alias Plug.Upload
 
   import SportsnetApi.Factory
 
   describe "create_post/1" do
     setup do
+      user = insert(:user)
       test_dir = "tmp/test_uploads"
       File.rm_rf(test_dir)
       File.mkdir_p!(test_dir)
@@ -22,11 +23,10 @@ defmodule SportsnetApi.SocialTest do
         end)
       end)
 
-      :ok
+      %{user: user}
     end
 
-    test "creates a post with valid attributes" do
-      user = insert(:user)
+    test "creates a post with valid attributes", %{user: user} do
       city = insert(:city)
       sport = insert(:sport)
 
@@ -55,8 +55,7 @@ defmodule SportsnetApi.SocialTest do
       assert "can't be blank" in errors_on(changeset).sport_id
     end
 
-    test "creates a post with media" do
-      user = insert(:user)
+    test "creates a post with media", %{user: user} do
       city = insert(:city)
       sport = insert(:sport)
       tmp_image_path = "tmp/test_image.jpg"
@@ -98,8 +97,7 @@ defmodule SportsnetApi.SocialTest do
       assert video.post_id == post.id
     end
 
-    test "returns an error when creating a post with invalid media" do
-      user = insert(:user)
+    test "returns an error when creating a post with invalid media", %{user: user} do
       city = insert(:city)
       sport = insert(:sport)
       tmp_invalid_path = "tmp/test_document.pdf"
@@ -127,7 +125,6 @@ defmodule SportsnetApi.SocialTest do
     test "creates a comment with valid attributes" do
       user = insert(:user)
       post = insert(:post)
-
       attrs = %{
         content: "A comment to a post",
         user_id: user.id,
@@ -148,6 +145,33 @@ defmodule SportsnetApi.SocialTest do
       assert "can't be blank" in errors_on(changeset).content
       assert "can't be blank" in errors_on(changeset).user_id
       assert "can't be blank" in errors_on(changeset).post_id
+    end
+  end
+
+  describe "like_post/1" do
+    test "create a like record on a post from user" do
+      user = insert(:user)
+      post = insert(:post)
+
+      attrs = %{
+        user_id: user.id,
+        post_id: post.id
+      }
+
+      assert {:ok, %Like{} = like} = Social.like_post(attrs)
+      assert like.post_id == post.id
+      assert like.user_id == user.id
+    end
+  end
+
+  describe "unlike_post/1" do
+    test "destroy a like record on a post from user" do
+      user = insert(:user)
+      post = insert(:post)
+      like = insert(:like, user: user, post: post)
+
+      assert {:ok, %Like{}} = Social.unlike_post(user.id, post.id)
+      refute Repo.get(Like, like.id)
     end
   end
 end

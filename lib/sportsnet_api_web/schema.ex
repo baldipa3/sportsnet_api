@@ -87,6 +87,11 @@ defmodule SportsnetApiWeb.Schema do
     field :comments, list_of(:comment)
   end
 
+  object :like_post_payload do
+    field :post_id, non_null(:id)
+    field :likes_count, non_null(:integer)
+  end
+
   query do
     @desc "Get all sports"
     field :all_sports, non_null(list_of(non_null(:sport))) do
@@ -122,6 +127,20 @@ defmodule SportsnetApiWeb.Schema do
       arg :city_id, non_null(:id)
       arg :default_sport_id, non_null(:id)
       resolve(&AccountsResolver.complete_user_onboarding/3)
+    end
+
+    @desc "Likes a post"
+    field :like_post, :like_post_payload do
+      arg :user_id, non_null(:id)
+      arg :post_id, non_null(:id)
+      resolve(&SocialResolver.like_post/3)
+    end
+
+    @desc "Unlikes a post"
+    field :unlike_post, :like_post_payload do
+      arg :user_id, non_null(:id)
+      arg :post_id, non_null(:id)
+      resolve(&SocialResolver.unlike_post/3)
     end
   end
 end

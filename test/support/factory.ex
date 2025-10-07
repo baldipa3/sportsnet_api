@@ -65,4 +65,11 @@ defmodule SportsnetApi.Factory do
       height: 1080,
     }
   end
+
+  def like_factory do
+    %SportsnetApi.Social.Like{
+      post: build(:post),
+      user: build(:user)
+    }
+  end
 end

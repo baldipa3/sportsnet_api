@@ -199,4 +199,74 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       } = json_response(conn, 200)
     end
   end
+
+  describe "post likes mutations" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      post = insert(:post)
+      token = create_user_api_token(user)
+      encoded_user_id = to_global_id("User", user.id)
+      encoded_post_id = to_global_id("Post", post.id)
+
+      %{conn: conn, user: user, post: post, token: token, encoded_user_id: encoded_user_id, encoded_post_id: encoded_post_id}
+    end
+
+    test "likes a post and return liked post number", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_post_id: encoded_post_id} do
+      mutation = """
+        mutation {
+          likePost(
+            user_id: "#{encoded_user_id}",
+            post_id: "#{encoded_post_id}"
+          ) {
+            post_id
+            likes_count
+          }
+        }
+      """
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{"query" => mutation})
+
+        assert %{
+          "data" => %{"likePost" => %{
+            "likes_count" => likes_count,
+            "post_id" => post_id
+          }}} = json_response(conn, 200)
+
+        assert likes_count == 1
+        assert encoded_post_id == post_id
+    end
+
+    test "unlikes a post and return liked post number", %{conn: conn, user: user, post: post, token: token, encoded_user_id: encoded_user_id, encoded_post_id: encoded_post_id} do
+      insert(:like, user: user, post: post)
+
+      mutation = """
+        mutation {
+          unlikePost(
+            user_id: "#{encoded_user_id}",
+            post_id: "#{encoded_post_id}"
+          ) {
+            post_id
+            likes_count
+          }
+        }
+      """
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{"query" => mutation})
+
+        assert %{
+          "data" => %{"unlikePost" => %{
+            "likes_count" => likes_count,
+            "post_id" => post_id
+          }}} = json_response(conn, 200)
+
+        assert likes_count == 0
+        assert encoded_post_id == post_id
+    end
+  end
 end

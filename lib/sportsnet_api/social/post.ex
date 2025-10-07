@@ -9,6 +9,7 @@ defmodule SportsnetApi.Social.Post do
     belongs_to :city, SportsnetApi.Geography.City
     has_many :comments, SportsnetApi.Social.Comment
     has_many :media, SportsnetApi.Social.Media
+    has_many :likes, SportsnetApi.Social.Like
 
     timestamps(type: :utc_datetime)
   end

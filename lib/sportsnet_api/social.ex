@@ -6,9 +6,7 @@ defmodule SportsnetApi.Social do
   import Ecto.Query, warn: false
 
   alias SportsnetApi.Repo
-  alias SportsnetApi.Social.Post
-  alias SportsnetApi.Social.Comment
-  alias SportsnetApi.Social.Media
+  alias SportsnetApi.Social.{ Post, Comment, Media, Like }
 
   @doc """
   Creates a new post by the user, optionally with media files
@@ -114,5 +112,60 @@ defmodule SportsnetApi.Social do
       |> Media.changeset(attrs)
       |> Repo.insert()
     end
+  end
+
+  @doc """
+  Like a post
+  """
+  def like_post(attrs) do
+    %Like{}
+    |> Like.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Unlike a post
+  """
+  def unlike_post(user_id, post_id) do
+    like = Repo.get_by(Like, user_id: user_id, post_id: post_id)
+
+    case like do
+      nil -> {:error, "Like not found"}
+      like -> Repo.delete(like)
+    end
+  end
+
+  @doc """
+  Check if a user has liked a post
+  """
+  def user_liked_post?(user_id, post_id) do
+    query = from l in Like,
+      where: l.user_id == ^user_id and l.post_id == ^post_id
+
+    Repo.exists?(query)
+  end
+
+  @doc """
+  Get like count for a post
+  """
+  def get_like_count(post_id) do
+    query = from l in Like,
+      where: l.post_id == ^post_id,
+      select: count(l.id)
+
+    Repo.one(query)
+  end
+
+  @doc """
+  Get users who liked a post
+  """
+  def get_post_likes(post_id) do
+    query = from l in Like,
+      where: l.post_id == ^post_id,
+      join: u in assoc(l, :user),
+      select: u,
+      order_by: [desc: l.inserted_at]
+
+    Repo.all(query)
   end
 end
