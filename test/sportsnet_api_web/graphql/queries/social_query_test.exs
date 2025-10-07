@@ -27,6 +27,8 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
             id
             caption
             insertedAt
+            likesCount
+            likedByCurrentUser
             comments {
               content
             }
@@ -59,7 +61,9 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         "caption" => caption,
         "comments" => comments,
         "media" => media,
-        "insertedAt" => inserted_at
+        "insertedAt" => inserted_at,
+        "likesCount" => likes_count,
+        "likedByCurrentUser" => liked_by_current_user
         }] = posts
 
       expected_post_id = to_global_id("Post", post.id)
@@ -69,6 +73,8 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       assert is_list(comments)
       assert is_list(media)
       assert is_binary(inserted_at)
+      assert is_integer(likes_count)
+      assert is_boolean(liked_by_current_user)
 
       Enum.each(media, fn media_item ->
         assert %{"url" => url} = media_item

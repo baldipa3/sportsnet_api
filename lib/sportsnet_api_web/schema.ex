@@ -85,6 +85,22 @@ defmodule SportsnetApiWeb.Schema do
     field :inserted_at, :datetime
     field :media, list_of(:media)
     field :comments, list_of(:comment)
+    field :likes_count, non_null(:integer) do
+      resolve fn post, _, _ ->
+        {:ok, SportsnetApi.Social.get_like_count(post.id)}
+      end
+    end
+
+    field :liked_by_current_user, :boolean do
+      resolve fn post, _, resolution ->
+        case resolution.context do
+          %{current_user: %{id: user_id}} ->
+            {:ok, SportsnetApi.Social.user_liked_post?(user_id, post.id)}
+          _ ->
+            {:ok, nil}
+        end
+      end
+    end
   end
 
   object :like_post_payload do
