@@ -129,6 +129,18 @@ IO.puts "Creating users"
   password: "Password123"
 })
 
+users =
+  1..10
+  |> Enum.map(fn i ->
+    {:ok, user} = SportsnetApi.Accounts.register_user(%{
+      name: Faker.Person.first_name(),
+      surname: Faker.Person.last_name(),
+      email: "user#{i}@gmail.com",
+      password: "Password123"
+    })
+    user
+  end)
+
 IO.puts "--------------"
 IO.puts "Creating posts with real sports media"
 IO.puts "--------------"
@@ -161,7 +173,7 @@ post = SportsnetApi.Repo.insert!(%SportsnetApi.Social.Post{
   city: city,
   sport: sport
 })
-media_records = WebMediaSeeder.create_media_records_for_post(post, "football")
+WebMediaSeeder.create_media_records_for_post(post, "football")
 
 IO.puts "--------------"
 IO.puts "Creating comments"
@@ -174,6 +186,25 @@ Enum.map(posts, fn post ->
       user: user_2
     })
   end)
+end)
+
+IO.puts "--------------"
+IO.puts "Creating likes"
+IO.puts "--------------"
+Enum.map(posts, fn post ->
+  Enum.map(users, fn user ->
+    SportsnetApi.Repo.insert!(%SportsnetApi.Social.Like{
+      post: post,
+      user: user
+    })
+  end)
+end)
+
+Enum.map(users, fn user ->
+  SportsnetApi.Repo.insert!(%SportsnetApi.Social.Like{
+    post: post,
+    user: user
+  })
 end)
 
 IO.puts "✅ Seed completed successfully!"

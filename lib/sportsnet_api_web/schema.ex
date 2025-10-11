@@ -147,14 +147,12 @@ defmodule SportsnetApiWeb.Schema do
 
     @desc "Likes a post"
     field :like_post, :like_post_payload do
-      arg :user_id, non_null(:id)
       arg :post_id, non_null(:id)
       resolve(&SocialResolver.like_post/3)
     end
 
     @desc "Unlikes a post"
     field :unlike_post, :like_post_payload do
-      arg :user_id, non_null(:id)
       arg :post_id, non_null(:id)
       resolve(&SocialResolver.unlike_post/3)
     end

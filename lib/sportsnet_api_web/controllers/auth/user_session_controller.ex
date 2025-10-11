@@ -18,7 +18,7 @@ defmodule SportsnetApiWeb.UserSessionController do
         |> json(%{
           status: "success",
           data: %{
-            id: user.id,
+            id: to_global_id("User", user.id),
             name: user.name,
             surname: user.surname,
             email: user.email,

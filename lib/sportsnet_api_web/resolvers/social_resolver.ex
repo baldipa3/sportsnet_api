@@ -39,23 +39,21 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     end
   end
 
-  def like_post(_parent, args, _resolution) do
-    manage_post_likes(args, :like)
+  def like_post(_parent, args,  %{context: %{current_user: current_user}}) do
+    manage_post_likes(args, current_user, :like)
   end
 
-  def unlike_post(_parent, args, _resolution) do
-    manage_post_likes(args, :unlike)
+  def unlike_post(_parent, args, %{context: %{current_user: current_user}}) do
+    manage_post_likes(args, current_user, :unlike)
   end
 
-  defp manage_post_likes(args, like_type) do
-    with  {:ok, %{type: :user, id: user_id_str}} <- from_global_id(args.user_id, SportsnetApiWeb.Schema),
-          {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.post_id, SportsnetApiWeb.Schema),
-          user_id <- String.to_integer(user_id_str),
+  defp manage_post_likes(args, current_user, like_type) do
+    with  {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.post_id, SportsnetApiWeb.Schema),
           post_id <- String.to_integer(post_id_str) do
 
       result = case like_type do
-        :like -> Social.like_post(%{user_id: user_id, post_id: post_id})
-        :unlike -> Social.unlike_post(user_id, post_id)
+        :like -> Social.like_post(%{user_id: current_user.id, post_id: post_id})
+        :unlike -> Social.unlike_post(current_user.id, post_id)
       end
 
       case result do

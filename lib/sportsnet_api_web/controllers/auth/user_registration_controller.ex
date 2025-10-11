@@ -2,6 +2,8 @@ defmodule SportsnetApiWeb.Auth.UserRegistrationController do
   require IEx
   use SportsnetApiWeb, :controller
 
+  import Absinthe.Relay.Node
+
   alias SportsnetApi.Accounts
 
   @doc """
@@ -50,7 +52,7 @@ defmodule SportsnetApiWeb.Auth.UserRegistrationController do
         |> json(%{
           status: "success",
           data: %{
-            id: user.id,
+            id: to_global_id("User", user.id),
             name: user.name,
             surname: user.surname,
             email: user.email,

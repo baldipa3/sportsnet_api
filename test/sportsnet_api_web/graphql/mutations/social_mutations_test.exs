@@ -54,9 +54,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         mutation CreatePost($caption: String!, $userId: ID!, $sportId: ID!, $cityId: ID!, $media: [Upload!]) {
           createPost(
             caption: $caption,
-            user_id: $userId,
-            sport_id: $sportId,
-            city_id: $cityId,
+            userId: $userId,
+            sportId: $sportId,
+            cityId: $cityId,
             media: $media
           ) {
             id
@@ -118,9 +118,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         mutation {
           createPost(
             caption: "A new Post without media",
-            user_id: "#{encoded_user_id}",
-            sport_id: "#{encoded_sport_id}",
-            city_id: "#{encoded_city_id}"
+            userId: "#{encoded_user_id}",
+            sportId: "#{encoded_sport_id}",
+            cityId: "#{encoded_city_id}"
           ) {
             id
             caption
@@ -148,9 +148,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         mutation {
           createPost(
             caption: "A new Post",
-            user_id: asdf,
-            sport_id: null,
-            city_id: null
+            userId: asdf,
+            sportId: null,
+            cityId: null
           ) {
             id
             caption
@@ -165,9 +165,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
       assert %{
         "errors" => [
-          %{"message" => "Argument \"user_id\" has invalid value asdf."},
-          %{"message" => "Argument \"sport_id\" has invalid value null."},
-          %{"message" => "Argument \"city_id\" has invalid value null."}
+          %{"message" => "Argument \"userId\" has invalid value asdf."},
+          %{"message" => "Argument \"sportId\" has invalid value null."},
+          %{"message" => "Argument \"cityId\" has invalid value null."}
         ]
       } = json_response(conn, 200)
     end
@@ -177,9 +177,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         mutation {
           createPost(
             caption: "",
-            user_id: "#{encoded_user_id}",
-            sport_id: "#{encoded_sport_id}",
-            city_id: "#{encoded_city_id}"
+            userId: "#{encoded_user_id}",
+            sportId: "#{encoded_sport_id}",
+            cityId: "#{encoded_city_id}"
           ) {
             id
             caption
@@ -205,21 +205,19 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       user = insert(:user)
       post = insert(:post)
       token = create_user_api_token(user)
-      encoded_user_id = to_global_id("User", user.id)
       encoded_post_id = to_global_id("Post", post.id)
 
-      %{conn: conn, user: user, post: post, token: token, encoded_user_id: encoded_user_id, encoded_post_id: encoded_post_id}
+      %{conn: conn, post: post, token: token, user: user, encoded_post_id: encoded_post_id}
     end
 
-    test "likes a post and return liked post number", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_post_id: encoded_post_id} do
+    test "likes a post and return liked post number", %{conn: conn, token: token, encoded_post_id: encoded_post_id} do
       mutation = """
         mutation {
           likePost(
-            user_id: "#{encoded_user_id}",
-            post_id: "#{encoded_post_id}"
+            postId: "#{encoded_post_id}"
           ) {
-            post_id
-            likes_count
+            postId
+            likesCount
           }
         }
       """
@@ -231,25 +229,24 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
         assert %{
           "data" => %{"likePost" => %{
-            "likes_count" => likes_count,
-            "post_id" => post_id
+            "likesCount" => likes_count,
+            "postId" => post_id
           }}} = json_response(conn, 200)
 
         assert likes_count == 1
         assert encoded_post_id == post_id
     end
 
-    test "unlikes a post and return liked post number", %{conn: conn, user: user, post: post, token: token, encoded_user_id: encoded_user_id, encoded_post_id: encoded_post_id} do
+    test "unlikes a post and return liked post number", %{conn: conn, user: user, post: post, token: token, encoded_post_id: encoded_post_id} do
       insert(:like, user: user, post: post)
 
       mutation = """
         mutation {
           unlikePost(
-            user_id: "#{encoded_user_id}",
-            post_id: "#{encoded_post_id}"
+            postId: "#{encoded_post_id}"
           ) {
-            post_id
-            likes_count
+            postId
+            likesCount
           }
         }
       """
@@ -261,8 +258,8 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
         assert %{
           "data" => %{"unlikePost" => %{
-            "likes_count" => likes_count,
-            "post_id" => post_id
+            "likesCount" => likes_count,
+            "postId" => post_id
           }}} = json_response(conn, 200)
 
         assert likes_count == 0
