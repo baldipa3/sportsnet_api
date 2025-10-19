@@ -71,10 +71,12 @@ defmodule SportsnetApi.Social do
   @doc """
   Query posts for a given city and sport on a user
   """
-  def fetch_posts_by_city_and_sport(city_id, sport_id) do
+  def fetch_posts_by_city_and_sport(city_slug, sport_slug) do
     Post
-    |> where(city_id: ^city_id, sport_id: ^sport_id)
-    |> preload([:comments, :media])
+    |> join(:inner, [p], s in assoc(p, :sport), as: :sport)
+    |> join(:inner, [p], c in assoc(p, :city), as: :city)
+    |> where([city: c, sport: s], c.slug == ^city_slug and s.slug == ^sport_slug)
+    |> preload([:comments, :media, :city, :sport])
     |> Repo.all()
   end
 

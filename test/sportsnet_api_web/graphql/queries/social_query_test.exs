@@ -16,14 +16,14 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
     end
 
     test "return posts by city and sport when authenticated", %{conn: conn, token: token, user: user, city: city, sport: sport} do
-      second_sport = insert(:sport)
-      second_city = insert(:city)
+      second_sport = insert(:sport, slug: "sport_slug_1")
+      second_city = insert(:city, slug: "city_slug_1")
       post = insert(:post_with_media, %{user: user, city: city, sport: sport})
       insert(:post_with_media, %{user: user, city: second_city, sport: second_sport})
 
       query = """
-        query postsByCityAndSport($cityId: ID!, $sportId: ID!) {
-          postsByCityAndSport(cityId: $cityId, sportId: $sportId) {
+        query postsByCityAndSport($citySlug: String!, $sportSlug: String!) {
+          postsByCityAndSport(citySlug: $citySlug, sportSlug: $sportSlug) {
             id
             caption
             insertedAt
@@ -39,12 +39,9 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         }
       """
 
-      encoded_city_id = to_global_id("City", city.id)
-      encoded_sport_id = to_global_id("Sport", sport.id)
-
       variables = %{
-        "cityId" => encoded_city_id,
-        "sportId" => encoded_sport_id,
+        "citySlug" => city.slug,
+        "sportSlug" => sport.slug,
       }
 
       conn =

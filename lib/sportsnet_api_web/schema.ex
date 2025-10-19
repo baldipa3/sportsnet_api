@@ -121,8 +121,8 @@ defmodule SportsnetApiWeb.Schema do
 
     @desc "Get posts for a given city/sport combination"
     field :posts_by_city_and_sport, non_null(list_of(non_null(:post))) do
-      arg :city_id, :id
-      arg :sport_id, :id
+      arg :city_slug, :string
+      arg :sport_slug, :string
       resolve(&SocialResolver.posts_by_city_and_sport/3)
     end
   end

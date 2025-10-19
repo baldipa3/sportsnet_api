@@ -27,16 +27,11 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     end
   end
 
+  @spec posts_by_city_and_sport(any(), any(), any()) :: {:error, binary()} | {:ok, any()}
   def posts_by_city_and_sport(_parent, args, _resolution) do
-    with  {:ok, %{type: :city, id: city_id_str}} <- from_global_id(args.city_id, SportsnetApiWeb.Schema),
-          {:ok, %{type: :sport, id: sport_id_str}} <- from_global_id(args.sport_id, SportsnetApiWeb.Schema),
-          city_id <- String.to_integer(city_id_str),
-          sport_id <- String.to_integer(sport_id_str) do
+    posts = Social.fetch_posts_by_city_and_sport(args.city_slug, args.sport_slug)
 
-      posts = Social.fetch_posts_by_city_and_sport(city_id, sport_id)
-
-      {:ok, posts}
-    end
+    {:ok, posts}
   end
 
   def like_post(_parent, args,  %{context: %{current_user: current_user}}) do
