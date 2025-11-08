@@ -1,5 +1,7 @@
 defmodule SportsnetApiWeb.Resolvers.SocialResolver do
+  alias SportsnetApi.Geography
   alias SportsnetApi.Social
+  alias SportsnetApi.Sports
 
   import Absinthe.Relay.Node
   import SportsnetApi.Helpers.ErrorHelpers
@@ -27,11 +29,12 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     end
   end
 
-  @spec posts_by_city_and_sport(any(), any(), any()) :: {:error, binary()} | {:ok, any()}
   def posts_by_city_and_sport(_parent, args, _resolution) do
-    posts = Social.fetch_posts_by_city_and_sport(args.city_slug, args.sport_slug)
-
-    {:ok, posts}
+    with {:ok, sport} <- Sports.get_sport_by_slug(args.sport_slug),
+         {:ok, city} <- Geography.get_city_by_slug(args.city_slug) do
+      posts = Social.fetch_posts_by_city_and_sport(args.city_slug, args.sport_slug)
+      {:ok, %{sport: sport, city: city, posts: posts}}
+    end
   end
 
   def like_post(_parent, args,  %{context: %{current_user: current_user}}) do

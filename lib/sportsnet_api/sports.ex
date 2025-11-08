@@ -28,4 +28,11 @@ defmodule SportsnetApi.Sports do
   def list_sports do
     Repo.all(Sport)
   end
+
+  def get_sport_by_slug(slug) do
+    case Repo.get_by(Sport, slug: slug) do
+      nil -> {:error, "Sport not found"}
+      sport -> {:ok, sport}
+    end
+  end
 end

@@ -24,16 +24,28 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       query = """
         query postsByCityAndSport($citySlug: String!, $sportSlug: String!) {
           postsByCityAndSport(citySlug: $citySlug, sportSlug: $sportSlug) {
-            id
-            caption
-            insertedAt
-            likesCount
-            likedByCurrentUser
-            comments {
-              content
+            sport {
+              id
+              name
+              slug
             }
-            media {
-              url
+            city {
+              id
+              name
+              slug
+            }
+            posts {
+              id
+              caption
+              insertedAt
+              likesCount
+              likedByCurrentUser
+              comments {
+                content
+              }
+              media {
+                url
+              }
             }
           }
         }
@@ -49,7 +61,14 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         |> put_req_header("authorization", "Bearer #{token}")
         |> post("/graphql", %{query: query, variables: variables})
 
-      assert %{"data" =>  %{"postsByCityAndSport" => posts}} = json_response(conn, 200)
+      assert %{"data" =>  %{"postsByCityAndSport" => %{
+        "sport" => sport_response,
+        "city" => city_response,
+        "posts" => posts
+      }}} = json_response(conn, 200)
+
+      assert to_global_id("Sport", sport.id) == sport_response["id"]
+      assert to_global_id("City", city.id) == city_response["id"]
 
       assert length(posts) == 1
 

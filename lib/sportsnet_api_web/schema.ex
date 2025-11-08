@@ -108,6 +108,12 @@ defmodule SportsnetApiWeb.Schema do
     field :likes_count, non_null(:integer)
   end
 
+  object :sport_city_feed do
+    field :sport, non_null(:sport)
+    field :city, non_null(:city)
+    field :posts, non_null(list_of(non_null(:post)))
+  end
+
   query do
     @desc "Get all sports"
     field :all_sports, non_null(list_of(non_null(:sport))) do
@@ -120,7 +126,7 @@ defmodule SportsnetApiWeb.Schema do
     end
 
     @desc "Get posts for a given city/sport combination"
-    field :posts_by_city_and_sport, non_null(list_of(non_null(:post))) do
+    field :posts_by_city_and_sport, :sport_city_feed do
       arg :city_slug, :string
       arg :sport_slug, :string
       resolve(&SocialResolver.posts_by_city_and_sport/3)

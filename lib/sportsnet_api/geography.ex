@@ -54,4 +54,11 @@ defmodule SportsnetApi.Geography do
     |> where(country_id: ^country_id)
     |> Repo.all()
   end
+
+  def get_city_by_slug(slug) do
+    case Repo.get_by(City, slug: slug) do
+      nil -> {:error, "City not found"}
+      city -> {:ok, city}
+    end
+  end
 end
