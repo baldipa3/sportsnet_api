@@ -126,7 +126,7 @@ defmodule SportsnetApiWeb.Schema do
     end
 
     @desc "Get posts for a given city/sport combination"
-    field :posts_by_city_and_sport, :sport_city_feed do
+    field :posts_by_city_and_sport, non_null(:sport_city_feed) do
       arg :city_slug, :string
       arg :sport_slug, :string
       resolve(&SocialResolver.posts_by_city_and_sport/3)
@@ -137,7 +137,6 @@ defmodule SportsnetApiWeb.Schema do
     @desc "Create a new post with optional media files"
     field :create_post, :post do
       arg :caption, non_null(:string)
-      arg :user_id, non_null(:id)
       arg :sport_id, non_null(:id)
       arg :city_id, non_null(:id)
       arg :media, list_of(non_null(:upload))

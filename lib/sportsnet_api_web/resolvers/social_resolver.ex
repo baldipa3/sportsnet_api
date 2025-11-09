@@ -6,17 +6,19 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
   import Absinthe.Relay.Node
   import SportsnetApi.Helpers.ErrorHelpers
 
-  def create_post(_parent, args, _resolution) do
+  def create_post(_parent, args, %{context: %{current_user: current_user}}) do
     files = Map.get(args, :media, [])
 
-    with  {:ok, %{type: :user, id: user_id_str}} <- from_global_id(args.user_id, SportsnetApiWeb.Schema),
-          {:ok, %{type: :sport, id: sport_id_str}} <- from_global_id(args.sport_id, SportsnetApiWeb.Schema),
+    with  {:ok, %{type: :sport, id: sport_id_str}} <- from_global_id(args.sport_id, SportsnetApiWeb.Schema),
           {:ok, %{type: :city, id: city_id_str}} <- from_global_id(args.city_id, SportsnetApiWeb.Schema),
-          user_id <- String.to_integer(user_id_str),
           city_id <- String.to_integer(city_id_str),
           sport_id <- String.to_integer(sport_id_str) do
 
-      attrs = %{ args | user_id: user_id, city_id: city_id, sport_id: sport_id}
+      attrs = Map.merge(args, %{
+        user_id: current_user.id,
+        city_id: city_id,
+        sport_id: sport_id
+      })
 
       case Social.create_post(attrs, files) do
         {:ok, post} ->

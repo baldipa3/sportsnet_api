@@ -13,7 +13,6 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       city = insert(:city)
       sport = insert(:sport)
       token = create_user_api_token(user)
-      encoded_user_id = to_global_id("User", user.id)
       encoded_city_id = to_global_id("City", city.id)
       encoded_sport_id = to_global_id("Sport", sport.id)
 
@@ -43,18 +42,16 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         conn: conn,
         token: token,
         encoded_sport_id: encoded_sport_id,
-        encoded_user_id: encoded_user_id,
         encoded_city_id: encoded_city_id,
         media: [upload_image, upload_video]
       }
     end
 
-    test "creates a post with media files", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video]} do
+    test "creates a post with media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video]} do
       mutation = """
-        mutation CreatePost($caption: String!, $userId: ID!, $sportId: ID!, $cityId: ID!, $media: [Upload!]) {
+        mutation CreatePost($caption: String!, $sportId: ID!, $cityId: ID!, $media: [Upload!]) {
           createPost(
             caption: $caption,
-            userId: $userId,
             sportId: $sportId,
             cityId: $cityId,
             media: $media
@@ -72,7 +69,6 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       """
       variables = %{
         "caption" => "A new Post with media",
-        "userId" => encoded_user_id,
         "sportId" => encoded_sport_id,
         "cityId" => encoded_city_id,
         "media" => ["0", "1"]
@@ -113,12 +109,11 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       } = json_response(conn, 200)
     end
 
-    test "creates a post without media files", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
+    test "creates a post without media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
       mutation = """
         mutation {
           createPost(
             caption: "A new Post without media",
-            userId: "#{encoded_user_id}",
             sportId: "#{encoded_sport_id}",
             cityId: "#{encoded_city_id}"
           ) {
@@ -148,7 +143,6 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         mutation {
           createPost(
             caption: "A new Post",
-            userId: asdf,
             sportId: null,
             cityId: null
           ) {
@@ -165,19 +159,17 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
       assert %{
         "errors" => [
-          %{"message" => "Argument \"userId\" has invalid value asdf."},
           %{"message" => "Argument \"sportId\" has invalid value null."},
           %{"message" => "Argument \"cityId\" has invalid value null."}
         ]
       } = json_response(conn, 200)
     end
 
-    test "returns an error when caption is blank", %{conn: conn, token: token, encoded_user_id: encoded_user_id, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
+    test "returns an error when caption is blank", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
       mutation = """
         mutation {
           createPost(
             caption: "",
-            userId: "#{encoded_user_id}",
             sportId: "#{encoded_sport_id}",
             cityId: "#{encoded_city_id}"
           ) {
