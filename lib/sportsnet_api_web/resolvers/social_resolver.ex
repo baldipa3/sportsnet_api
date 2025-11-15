@@ -5,6 +5,7 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
 
   import Absinthe.Relay.Node
   import SportsnetApi.Helpers.ErrorHelpers
+  import Ecto.Query
 
   def create_post(_parent, args, %{context: %{current_user: current_user}}) do
     files = Map.get(args, :media, [])
@@ -64,5 +65,17 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
         {:error, changeset} -> {:error, changeset}
       end
     end
+  end
+
+  def posts_connection(%{sport: sport, city: city}, args, _resolution) do
+    posts =
+      from(p in SportsnetApi.Social.Post,
+        where: p.sport_id == ^sport.id and p.city_id == ^city.id,
+        order_by: [desc: p.inserted_at],
+        preload: [:media, :comments, :user, :sport, :city]
+      )
+      |> SportsnetApi.Repo.all()
+
+    Absinthe.Relay.Connection.from_list(posts, args)
   end
 end

@@ -103,6 +103,8 @@ defmodule SportsnetApiWeb.Schema do
     end
   end
 
+  connection node_type: :post
+
   object :like_post_payload do
     field :post_id, non_null(:id)
     field :likes_count, non_null(:integer)
@@ -111,7 +113,10 @@ defmodule SportsnetApiWeb.Schema do
   object :sport_city_feed do
     field :sport, non_null(:sport)
     field :city, non_null(:city)
-    field :posts, non_null(list_of(non_null(:post)))
+
+    connection field :posts, node_type: :post do
+      resolve(&SocialResolver.posts_connection/3)
+    end
   end
 
   query do
