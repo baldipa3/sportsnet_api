@@ -205,11 +205,12 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
     test "likes a post and return liked post number", %{conn: conn, token: token, encoded_post_id: encoded_post_id} do
       mutation = """
         mutation {
-          likePost(
-            postId: "#{encoded_post_id}"
-          ) {
-            postId
-            likesCount
+          likePost(id: "#{encoded_post_id}", doesLike: true) {
+            post {
+              id
+              likesCount
+              likedByCurrentUser
+            }
           }
         }
       """
@@ -221,8 +222,11 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
         assert %{
           "data" => %{"likePost" => %{
-            "likesCount" => likes_count,
-            "postId" => post_id
+            "post" => %{
+              "likesCount" => likes_count,
+              "id" => post_id,
+              "likedByCurrentUser" => true
+            }
           }}} = json_response(conn, 200)
 
         assert likes_count == 1
@@ -234,11 +238,12 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
       mutation = """
         mutation {
-          unlikePost(
-            postId: "#{encoded_post_id}"
-          ) {
-            postId
-            likesCount
+          likePost(id: "#{encoded_post_id}", doesLike: false) {
+            post {
+              id
+              likesCount
+              likedByCurrentUser
+            }
           }
         }
       """
@@ -249,9 +254,12 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         |> post("/graphql", %{"query" => mutation})
 
         assert %{
-          "data" => %{"unlikePost" => %{
-            "likesCount" => likes_count,
-            "postId" => post_id
+          "data" => %{"likePost" => %{
+            "post" => %{
+              "likesCount" => likes_count,
+              "id" => post_id,
+              "likedByCurrentUser" => false
+            }
           }}} = json_response(conn, 200)
 
         assert likes_count == 0

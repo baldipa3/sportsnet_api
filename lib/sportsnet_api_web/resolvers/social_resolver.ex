@@ -2,6 +2,7 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
   alias SportsnetApi.Geography
   alias SportsnetApi.Social
   alias SportsnetApi.Sports
+  alias SportsnetApiWeb.Helpers.FeedId
 
   import Absinthe.Relay.Node
   import SportsnetApi.Helpers.ErrorHelpers
@@ -36,46 +37,43 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     with {:ok, sport} <- Sports.get_sport_by_slug(args.sport_slug),
          {:ok, city} <- Geography.get_city_by_slug(args.city_slug) do
       posts = Social.fetch_posts_by_city_and_sport(args.city_slug, args.sport_slug)
-      {:ok, %{sport: sport, city: city, posts: posts}}
+      # Create a virtual ID from sport and city IDs
+      virtual_id = FeedId.encode_feed_id(sport.id, city.id)
+
+      {:ok, %{id: virtual_id, sport: sport, city: city, posts: posts}}
     end
   end
 
   def like_post(_parent, args,  %{context: %{current_user: current_user}}) do
-    manage_post_likes(args, current_user, :like)
-  end
-
-  def unlike_post(_parent, args, %{context: %{current_user: current_user}}) do
-    manage_post_likes(args, current_user, :unlike)
-  end
-
-  defp manage_post_likes(args, current_user, like_type) do
-    with  {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.post_id, SportsnetApiWeb.Schema),
+    with  {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
           post_id <- String.to_integer(post_id_str) do
 
-      result = case like_type do
-        :like -> Social.like_post(%{user_id: current_user.id, post_id: post_id})
-        :unlike -> Social.unlike_post(current_user.id, post_id)
-      end
+      result = Social.like_post(%{
+        user_id: current_user.id,
+        post_id: post_id,
+        does_like: args.does_like
+      })
 
       case result do
-        {:ok, _like} -> {:ok, %{
-          post_id: args.post_id,
-          likes_count: Social.get_like_count(post_id)
-        }}
-        {:error, changeset} -> {:error, changeset}
+        {:ok, _like} ->
+          case Social.get_post(post_id) do
+            {:ok, post} -> {:ok, %{post: post}}
+            {:error, _reason} -> {:error, "Post not found"}
+          end
+        {:error, changeset} ->
+          {:error, changeset}
       end
     end
   end
 
   def posts_connection(%{sport: sport, city: city}, args, _resolution) do
-    posts =
+    query =
       from(p in SportsnetApi.Social.Post,
         where: p.sport_id == ^sport.id and p.city_id == ^city.id,
         order_by: [desc: p.inserted_at],
         preload: [:media, :comments, :user, :sport, :city]
       )
-      |> SportsnetApi.Repo.all()
 
-    Absinthe.Relay.Connection.from_list(posts, args)
+    Absinthe.Relay.Connection.from_query(query, &SportsnetApi.Repo.all/1, args)
   end
 end

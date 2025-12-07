@@ -155,7 +155,8 @@ defmodule SportsnetApi.SocialTest do
 
       attrs = %{
         user_id: user.id,
-        post_id: post.id
+        post_id: post.id,
+        does_like: true
       }
 
       assert {:ok, %Like{} = like} = Social.like_post(attrs)
@@ -170,7 +171,13 @@ defmodule SportsnetApi.SocialTest do
       post = insert(:post)
       like = insert(:like, user: user, post: post)
 
-      assert {:ok, %Like{}} = Social.unlike_post(user.id, post.id)
+      attrs = %{
+        user_id: user.id,
+        post_id: post.id,
+        does_like: false
+      }
+
+      assert {:ok, :unliked} = Social.like_post(attrs)
       refute Repo.get(Like, like.id)
     end
   end

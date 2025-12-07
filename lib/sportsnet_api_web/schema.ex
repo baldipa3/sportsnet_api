@@ -2,6 +2,7 @@ defmodule SportsnetApiWeb.Schema do
   use Absinthe.Schema
   use Absinthe.Relay.Schema, :modern
 
+  alias SportsnetApiWeb.Resolvers.NodeResolver
   alias SportsnetApiWeb.Resolvers.SportsResolver
   alias SportsnetApiWeb.Resolvers.SocialResolver
   alias SportsnetApiWeb.Resolvers.GeographyResolver
@@ -18,6 +19,7 @@ defmodule SportsnetApiWeb.Schema do
       %SportsnetApi.Accounts.User{}, _ -> :user
       %SportsnetApi.Social.Media{}, _ -> :media
       %SportsnetApi.Social.Post{}, _ -> :post
+      %{id: _, sport: _, city: _}, _ -> :sport_city_feed
       _, _ ->
         nil
     end
@@ -97,7 +99,7 @@ defmodule SportsnetApiWeb.Schema do
           %{current_user: %{id: user_id}} ->
             {:ok, SportsnetApi.Social.user_liked_post?(user_id, post.id)}
           _ ->
-            {:ok, nil}
+            {:ok, false}
         end
       end
     end
@@ -106,11 +108,10 @@ defmodule SportsnetApiWeb.Schema do
   connection node_type: :post
 
   object :like_post_payload do
-    field :post_id, non_null(:id)
-    field :likes_count, non_null(:integer)
+    field :post, non_null(:post)
   end
 
-  object :sport_city_feed do
+  node object :sport_city_feed do
     field :sport, non_null(:sport)
     field :city, non_null(:city)
 
@@ -120,6 +121,10 @@ defmodule SportsnetApiWeb.Schema do
   end
 
   query do
+    node field do
+      resolve(&NodeResolver.resolve_node/2)
+    end
+
     @desc "Get all sports"
     field :all_sports, non_null(list_of(non_null(:sport))) do
       resolve(&SportsResolver.all_sports/3)
@@ -157,14 +162,9 @@ defmodule SportsnetApiWeb.Schema do
 
     @desc "Likes a post"
     field :like_post, :like_post_payload do
-      arg :post_id, non_null(:id)
+      arg :id, non_null(:id)
+      arg :does_like, non_null(:boolean)
       resolve(&SocialResolver.like_post/3)
-    end
-
-    @desc "Unlikes a post"
-    field :unlike_post, :like_post_payload do
-      arg :post_id, non_null(:id)
-      resolve(&SocialResolver.unlike_post/3)
     end
   end
 end

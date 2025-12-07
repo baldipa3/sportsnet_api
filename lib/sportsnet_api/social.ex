@@ -117,23 +117,22 @@ defmodule SportsnetApi.Social do
   end
 
   @doc """
-  Like a post
+  Like or unlike a post
   """
-  def like_post(attrs) do
+  def like_post(%{does_like: true, user_id: user_id, post_id: post_id}) do
     %Like{}
-    |> Like.changeset(attrs)
-    |> Repo.insert()
+    |> Like.changeset(%{user_id: user_id, post_id: post_id})
+    |> Repo.insert(
+      on_conflict: :nothing,
+      conflict_target: [:user_id, :post_id]
+    )
   end
 
-  @doc """
-  Unlike a post
-  """
-  def unlike_post(user_id, post_id) do
-    like = Repo.get_by(Like, user_id: user_id, post_id: post_id)
-
-    case like do
-      nil -> {:error, "Like not found"}
-      like -> Repo.delete(like)
+  def like_post(%{does_like: false, user_id: user_id, post_id: post_id}) do
+    case from(l in Like, where: l.user_id == ^user_id and l.post_id == ^post_id)
+        |> Repo.delete_all() do
+      {1, _} -> {:ok, :unliked}
+      {0, _} -> {:ok, :already_unliked}
     end
   end
 
@@ -169,5 +168,12 @@ defmodule SportsnetApi.Social do
       order_by: [desc: l.inserted_at]
 
     Repo.all(query)
+  end
+
+  def get_post(id) do
+    case Repo.get(Post, id) do
+      nil -> {:error, :not_found}
+      post -> {:ok, post}
+    end
   end
 end

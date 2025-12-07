@@ -16,9 +16,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
     end
 
     test "return paginated posts by city and sport when authenticated", %{conn: conn, token: token, user: user, city: city, sport: sport} do
-      insert(:post_with_media, %{user: user, city: city, sport: sport})
-      insert(:post_with_media, %{user: user, city: city, sport: sport})
-      insert(:post_with_media, %{user: user, city: city, sport: sport})
+      insert_list(3, :post_with_media, %{user: user, city: city, sport: sport})
 
       other_sport = insert(:sport, slug: "sport_slug_1")
       other_city = insert(:city, slug: "city_slug_1")
@@ -194,6 +192,48 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
              } = json_response(conn2, 200)
 
       assert length(edges) == 1
+    end
+
+    test "can refetch feed by node ID", %{conn: conn, token: token, city: city, sport: sport} do
+      query1 = """
+        query {
+          postsByCityAndSport(citySlug: "#{city.slug}", sportSlug: "#{sport.slug}") {
+            id
+            sport { name }
+            city { name }
+          }
+        }
+      """
+
+      conn1 = conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: query1})
+
+      %{"data" => %{"postsByCityAndSport" => %{"id" => feed_id}}} = json_response(conn1, 200)
+
+      # Refetch using node(id:)
+      query2 = """
+        query {
+          node(id: "#{feed_id}") {
+            ... on SportCityFeed {
+              sport { name }
+              city { name }
+            }
+          }
+        }
+      """
+
+      conn2 = build_conn()
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: query2})
+
+      assert %{"data" => %{"node" => %{
+        "sport" => %{"name" => sport_name},
+        "city" => %{"name" => city_name}
+      }}} = json_response(conn2, 200)
+
+      assert sport_name == sport.name
+      assert city_name == city.name
     end
   end
 end
