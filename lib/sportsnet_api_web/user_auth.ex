@@ -15,8 +15,8 @@ defmodule SportsnetApiWeb.UserAuth do
   Returns `{:ok, token}` tuple containing the generated authentication token.
   """
 
-  @spec log_in_user(map() | User) :: {:ok, binary()}
-  def log_in_user(user) do
+  @spec login_user(map() | User) :: {:ok, binary()}
+  def login_user(user) do
     token = Accounts.create_user_api_token(user)
 
     {:ok, token}
@@ -33,8 +33,8 @@ defmodule SportsnetApiWeb.UserAuth do
   for future API requests.
   """
 
-  @spec log_out_user(Plug.Conn.t()) :: Plug.Conn.t()
-  def log_out_user(conn) do
+  @spec logout_user(Plug.Conn.t()) :: Plug.Conn.t()
+  def logout_user(conn) do
     with ["Bearer " <> token] <- get_req_header(conn, "authorization") do
       Accounts.delete_user_api_token(token)
     end

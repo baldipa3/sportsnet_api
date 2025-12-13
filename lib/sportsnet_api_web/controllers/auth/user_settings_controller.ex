@@ -43,7 +43,7 @@
 #         conn
 #         |> put_flash(:info, "Password updated successfully.")
 #         |> put_session(:user_return_to, ~p"/users/settings")
-#         |> UserAuth.log_in_user(user)
+#         |> UserAuth.login_user(user)
 
 #       {:error, changeset} ->
 #         render(conn, :edit, password_changeset: changeset)

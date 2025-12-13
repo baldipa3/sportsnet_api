@@ -54,7 +54,7 @@ defmodule SportsnetApiWeb.Router do
     pipe_through [:api]  # public routes
 
     post "/users/register", SportsnetApiWeb.Auth.UserRegistrationController, :create
-    post "/users/log_in", SportsnetApiWeb.UserSessionController, :create
+    post "/users/login", SportsnetApiWeb.UserSessionController, :create
     # post "/users/confirm", UserConfirmationController, :create
     # post "/users/confirm/:token", UserConfirmationController, :update
     # post "/users/reset_password", UserResetPasswordController, :create
@@ -65,7 +65,7 @@ defmodule SportsnetApiWeb.Router do
     pipe_through :api_protected  # authenticated routes
 
     forward "/graphql", Absinthe.Plug, schema: SportsnetApiWeb.Schema
-    delete "/users/log_out", SportsnetApiWeb.UserSessionController, :delete
+    delete "/users/logout", SportsnetApiWeb.UserSessionController, :delete
     # put "/users/settings", UserSettingsController, :update
     # post "/users/settings/confirm_email/:token", UserSettingsController, :confirm_email
   end

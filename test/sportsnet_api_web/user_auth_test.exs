@@ -10,9 +10,9 @@ defmodule SportsnetApiWeb.UserAuthTest do
     %{user: user_fixture()}
   end
 
-  describe "log_in_user/1" do
+  describe "login_user/1" do
     test "generates a api_token for the user", %{user: user} do
-      assert {:ok, token} = UserAuth.log_in_user(user)
+      assert {:ok, token} = UserAuth.login_user(user)
       assert is_binary(token)
     end
   end
@@ -23,7 +23,7 @@ defmodule SportsnetApiWeb.UserAuthTest do
 
       conn
       |> put_req_header("authorization", "Bearer #{token}")
-      |> UserAuth.log_out_user()
+      |> UserAuth.logout_user()
 
       refute Accounts.fetch_user_by_api_token(token) == {:ok, user}
     end

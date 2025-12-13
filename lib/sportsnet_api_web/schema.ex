@@ -120,6 +120,10 @@ defmodule SportsnetApiWeb.Schema do
     end
   end
 
+  object :create_post_payload do
+    field :post_edge, non_null(:post_edge)
+  end
+
   query do
     node field do
       resolve(&NodeResolver.resolve_node/2)
@@ -145,7 +149,7 @@ defmodule SportsnetApiWeb.Schema do
 
   mutation do
     @desc "Create a new post with optional media files"
-    field :create_post, :post do
+    field :create_post, :create_post_payload do
       arg :caption, non_null(:string)
       arg :sport_id, non_null(:id)
       arg :city_id, non_null(:id)

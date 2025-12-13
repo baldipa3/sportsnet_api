@@ -24,7 +24,13 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
 
       case Social.create_post(attrs, files) do
         {:ok, post} ->
-          {:ok, post}
+          edge = %{
+            node: post,
+            cursor: Base.encode64("post:#{post.id}")
+          }
+
+          {:ok, %{post_edge: edge}}
+
         {:error, %Ecto.Changeset{} = changeset} ->
           {:error, format_changeset_errors(changeset)}
         {:error, reason} ->

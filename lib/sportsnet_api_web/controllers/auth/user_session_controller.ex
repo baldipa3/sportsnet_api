@@ -10,7 +10,7 @@ defmodule SportsnetApiWeb.UserSessionController do
     %{"email" => email, "password" => password} = user_params
     case Accounts.get_user_by_email_and_password(email, password) do
       {:ok, user} ->
-        {:ok, token} = UserAuth.log_in_user(user)
+        {:ok, token} = UserAuth.login_user(user)
         onboarding_required = Accounts.onboarding_required?(user)
 
         conn
@@ -44,7 +44,7 @@ defmodule SportsnetApiWeb.UserSessionController do
   @spec delete(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def delete(conn, _params) do
     conn
-    |> UserAuth.log_out_user()
+    |> UserAuth.logout_user()
     |> put_status(:ok)
     |> json(%{status: "success", message: "logged out"})
   end

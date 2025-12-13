@@ -36,7 +36,7 @@
 #       {:ok, _} ->
 #         conn
 #         |> put_flash(:info, "Password reset successfully.")
-#         |> redirect(to: ~p"/users/log_in")
+#         |> redirect(to: ~p"/users/login")
 
 #       {:error, changeset} ->
 #         render(conn, :edit, changeset: changeset)

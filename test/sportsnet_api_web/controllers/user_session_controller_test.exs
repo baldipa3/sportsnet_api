@@ -11,11 +11,11 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
     %{user: user, conn: conn}
   end
 
-  describe "POST /users/log_in" do
-    test "log_in the user and responds with json", %{conn: conn, user: user} do
+  describe "POST /users/login" do
+    test "login the user and responds with json", %{conn: conn, user: user} do
 
       params = %{email: user.email, password: "Password123"}
-      conn = post(conn, ~p"/users/log_in", %{"user" => params})
+      conn = post(conn, ~p"/users/login", %{"user" => params})
       json = json_response(conn, 200)
 
       assert json["status"] == "success"
@@ -27,11 +27,11 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
       assert json["data"]["default_sport_id"] != nil
     end
 
-    test "log_in the user requires onboarding without city/sport", %{conn: conn} do
+    test "login the user requires onboarding without city/sport", %{conn: conn} do
       user = insert(:user)
 
       params = %{email: user.email, password: "Password123"}
-      conn = post(conn, ~p"/users/log_in", %{"user" => params})
+      conn = post(conn, ~p"/users/login", %{"user" => params})
       json = json_response(conn, 200)
 
       assert json["status"] == "success"
@@ -41,7 +41,7 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
 
     test "responds with errors for invalid email", %{conn: conn} do
       params = %{email: "invalid.email@example.com", password: "Password123"}
-      conn = post(conn, ~p"/users/log_in", %{"user" => params})
+      conn = post(conn, ~p"/users/login", %{"user" => params})
       json = json_response(conn, 401)
 
       assert json["status"] == "error"
@@ -50,7 +50,7 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
 
     test "responds with errors for invalid password", %{conn: conn, user: user} do
       params = %{email: user.email, password: "invalid-password"}
-      conn = post(conn, ~p"/users/log_in", %{"user" => params})
+      conn = post(conn, ~p"/users/login", %{"user" => params})
       json = json_response(conn, 401)
 
       assert json["status"] == "error"
@@ -58,14 +58,14 @@ defmodule SportsnetApiWeb.UserSessionControllerTest do
     end
   end
 
-  describe "DELETE /users/log_out" do
-    test "log_out the user removing the token", %{conn: conn, user: user} do
+  describe "DELETE /users/logout" do
+    test "logout the user removing the token", %{conn: conn, user: user} do
       token = Accounts.create_user_api_token(user)
 
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
-        |> delete(~p"/users/log_out")
+        |> delete(~p"/users/logout")
 
       assert conn.status == 200
 
