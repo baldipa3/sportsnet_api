@@ -9,9 +9,11 @@ defmodule SportsnetApi.MediaStorage.Local do
     timestamp = System.system_time(:second)
     dest_filename = "#{timestamp}_post_#{post_id}_#{filename}"
     dest_path = Path.join(dest_dir, dest_filename)
+    url = "http://localhost:4000/images/#{dest_filename}"
 
     case File.cp(source_path, dest_path) do
-      :ok -> {:ok, "images/#{dest_filename}"}
+      :ok -> {:ok, url}
+
       {:error, reason} -> {:error, "Failed to store file: #{reason}"}
     end
   end
