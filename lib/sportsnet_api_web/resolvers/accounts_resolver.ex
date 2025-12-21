@@ -24,4 +24,10 @@ defmodule SportsnetApiWeb.Resolvers.AccountsResolver do
       end
     end
   end
+
+  def current_user(_parent, _args, %{context: %{current_user: user}}) do
+    user = user |> Repo.preload([city: :country, default_sport: []])
+
+    {:ok, user}
+  end
 end

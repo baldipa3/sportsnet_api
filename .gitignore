@@ -26,3 +26,5 @@ erl_crash.dump
 sportsnet_api-*.tar
 
 /env/
+
+/priv/static/images/

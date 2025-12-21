@@ -37,6 +37,16 @@ defmodule SportsnetApiWeb.Schema do
   node object :city do
     field :name, non_null(:string)
     field :slug, non_null(:string)
+
+    field :country, :country do
+      resolve fn city, _, _ ->
+        city = SportsnetApi.Repo.preload(city, :country)
+        case city.country do
+          %SportsnetApi.Geography.Country{} = country -> {:ok, country}
+          _ -> {:ok, nil}
+        end
+      end
+    end
   end
 
   node object :sport do
@@ -144,6 +154,11 @@ defmodule SportsnetApiWeb.Schema do
       arg :city_slug, :string
       arg :sport_slug, :string
       resolve(&SocialResolver.posts_by_city_and_sport/3)
+    end
+
+    @desc "Get current authenticated user"
+    field :current_user, non_null(:user) do
+      resolve(&AccountsResolver.current_user/3)
     end
   end
 
