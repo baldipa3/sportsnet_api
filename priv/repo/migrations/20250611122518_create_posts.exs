@@ -7,6 +7,7 @@ defmodule SportsnetApi.Repo.Migrations.CreatePosts do
       add :user_id, references(:users, on_delete: :restrict), null: false
       add :sport_id, references(:sports, on_delete: :restrict), null: false
       add :city_id, references(:cities, on_delete: :restrict), null: false
+      add :deleted_at, :utc_datetime
 
       timestamps(type: :utc_datetime)
     end

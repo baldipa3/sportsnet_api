@@ -7,46 +7,47 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
   alias Plug.Upload
 
+  setup %{conn: conn} do
+    user = insert(:user)
+    city = insert(:city)
+    sport = insert(:sport)
+    token = create_user_api_token(user)
+    encoded_city_id = to_global_id("City", city.id)
+    encoded_sport_id = to_global_id("Sport", sport.id)
+
+    image_path = "tmp/test_image.jpg"
+    video_path = "tmp/test_video.mp4"
+    File.write!(image_path, "fake image data")
+    File.write!(video_path, "fake video data")
+
+    upload_image = %Upload{
+      filename: "test_image.jpg",
+      path: image_path,
+      content_type: "image/jpeg"
+    }
+
+    upload_video = %Upload{
+      filename: "test_video.mp4",
+      path: video_path,
+      content_type: "video/mp4"
+    }
+
+    on_exit(fn ->
+      Path.wildcard("priv/static/images/*_test_image.jpg") |> Enum.each(&File.rm/1)
+      Path.wildcard("priv/static/images/*_test_video.mp4") |> Enum.each(&File.rm/1)
+    end)
+
+    %{
+      conn: conn,
+      token: token,
+      encoded_sport_id: encoded_sport_id,
+      encoded_city_id: encoded_city_id,
+      media: [upload_image, upload_video],
+      user: user
+    }
+  end
+
   describe "createPost mutation" do
-    setup %{conn: conn} do
-      user = insert(:user)
-      city = insert(:city)
-      sport = insert(:sport)
-      token = create_user_api_token(user)
-      encoded_city_id = to_global_id("City", city.id)
-      encoded_sport_id = to_global_id("Sport", sport.id)
-
-      image_path = "tmp/test_image.jpg"
-      video_path = "tmp/test_video.mp4"
-      File.write!(image_path, "fake image data")
-      File.write!(video_path, "fake video data")
-
-      upload_image = %Upload{
-        filename: "test_image.jpg",
-        path: image_path,
-        content_type: "image/jpeg"
-      }
-
-      upload_video = %Upload{
-        filename: "test_video.mp4",
-        path: video_path,
-        content_type: "video/mp4"
-      }
-
-      on_exit(fn ->
-        Path.wildcard("priv/static/images/*_test_image.jpg") |> Enum.each(&File.rm/1)
-        Path.wildcard("priv/static/images/*_test_video.mp4") |> Enum.each(&File.rm/1)
-      end)
-
-      %{
-        conn: conn,
-        token: token,
-        encoded_sport_id: encoded_sport_id,
-        encoded_city_id: encoded_city_id,
-        media: [upload_image, upload_video]
-      }
-    end
-
     test "creates a post with media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video]} do
       mutation = """
         mutation CreatePost($caption: String!, $sportId: ID!, $cityId: ID!, $media: [Upload!]) {
@@ -66,6 +67,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
           }
         }
       """
+
       variables = %{
         "caption" => "A new Post with media",
         "sportId" => encoded_sport_id,
@@ -271,6 +273,46 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
         assert likes_count == 0
         assert encoded_post_id == post_id
+    end
+  end
+
+  describe "deletePost mutation" do
+    test "soft delete a post with media files", %{conn: conn, token: token, user: user} do
+      post = insert(:post, user: user)
+      encoded_post_id = to_global_id("Post", post.id)
+
+      mutation = """
+        mutation DeletePost($id: ID!) {
+          deletePost(id: $id) {
+            id
+          }
+        }
+      """
+
+      variables = %{
+        "id" => encoded_post_id
+      }
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/graphql", %{
+          "query" => mutation,
+          "variables" => Jason.encode!(variables)
+        })
+
+      updated_post = SportsnetApi.Repo.get!(SportsnetApi.Social.Post, post.id)
+
+      assert %{
+        "data" => %{
+          "deletePost" => %{
+            "id" => ^encoded_post_id
+          }
+        }
+      } = json_response(conn, 200)
+
+      assert %{deleted_at: %DateTime{}} = updated_post
     end
   end
 end

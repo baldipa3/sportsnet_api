@@ -2,6 +2,7 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
   alias SportsnetApi.Geography
   alias SportsnetApi.Social
   alias SportsnetApi.Sports
+  alias SportsnetApi.Repo
   alias SportsnetApiWeb.Helpers.FeedId
 
   import Absinthe.Relay.Node
@@ -82,4 +83,21 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
 
     Absinthe.Relay.Connection.from_query(query, &SportsnetApi.Repo.all/1, args)
   end
+
+  def delete_post(_parent, args, %{context: %{current_user: current_user}}) do
+    with {:ok, %{type: :post, id: id}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
+         post <- Repo.get(SportsnetApi.Social.Post, id),
+         post when not is_nil(post) <- post,
+         :ok <- authorize_post_owner(post.user_id, current_user.id) do
+
+      Social.delete_post(post)
+    else
+      nil -> {:error, "Post not found"}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp authorize_post_owner(post_user_id, user_id)
+    when post_user_id == user_id, do: :ok
+  defp authorize_post_owner(_post, _user), do: {:error, "Unauthorized"}
 end

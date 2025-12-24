@@ -4,6 +4,7 @@ defmodule SportsnetApi.Social.Post do
 
   schema "posts" do
     field :caption, :string
+    field :deleted_at, :utc_datetime
     belongs_to :user, SportsnetApi.Accounts.User
     belongs_to :sport, SportsnetApi.Sports.Sport
     belongs_to :city, SportsnetApi.Geography.City
@@ -19,7 +20,7 @@ defmodule SportsnetApi.Social.Post do
   """
   def changeset(post, attrs) do
     post
-    |> cast(attrs, [:caption, :user_id, :sport_id, :city_id])
+    |> cast(attrs, [:caption, :user_id, :sport_id, :city_id, :deleted_at])
     |> validate_required([:caption, :user_id, :sport_id, :city_id])
   end
 end

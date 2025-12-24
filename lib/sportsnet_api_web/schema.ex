@@ -153,6 +153,7 @@ defmodule SportsnetApiWeb.Schema do
     field :posts_by_city_and_sport, non_null(:sport_city_feed) do
       arg :city_slug, :string
       arg :sport_slug, :string
+
       resolve(&SocialResolver.posts_by_city_and_sport/3)
     end
 
@@ -169,6 +170,7 @@ defmodule SportsnetApiWeb.Schema do
       arg :sport_id, non_null(:id)
       arg :city_id, non_null(:id)
       arg :media, list_of(non_null(:upload))
+
       resolve(&SocialResolver.create_post/3)
     end
 
@@ -176,6 +178,7 @@ defmodule SportsnetApiWeb.Schema do
     field :complete_user_onboarding, :user do
       arg :city_id, non_null(:id)
       arg :default_sport_id, non_null(:id)
+
       resolve(&AccountsResolver.complete_user_onboarding/3)
     end
 
@@ -183,7 +186,15 @@ defmodule SportsnetApiWeb.Schema do
     field :like_post, :like_post_payload do
       arg :id, non_null(:id)
       arg :does_like, non_null(:boolean)
+
       resolve(&SocialResolver.like_post/3)
+    end
+
+    @desc "Soft delete a post"
+    field :delete_post, non_null(:post) do
+      arg :id, non_null(:id)
+
+      resolve(&SocialResolver.delete_post/3)
     end
   end
 end

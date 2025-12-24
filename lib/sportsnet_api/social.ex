@@ -176,4 +176,10 @@ defmodule SportsnetApi.Social do
       post -> {:ok, post}
     end
   end
+
+  def delete_post(post) do
+    post
+    |> Post.changeset(%{deleted_at: DateTime.utc_now()})
+    |> Repo.update()
+  end
 end
