@@ -43,11 +43,10 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
   def posts_by_city_and_sport(_parent, args, _resolution) do
     with {:ok, sport} <- Sports.get_sport_by_slug(args.sport_slug),
          {:ok, city} <- Geography.get_city_by_slug(args.city_slug) do
-      posts = Social.fetch_posts_by_city_and_sport(args.city_slug, args.sport_slug)
       # Create a virtual ID from sport and city IDs
       virtual_id = FeedId.encode_feed_id(sport.id, city.id)
 
-      {:ok, %{id: virtual_id, sport: sport, city: city, posts: posts}}
+      {:ok, %{id: virtual_id, sport: sport, city: city}}
     end
   end
 
@@ -77,6 +76,7 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     query =
       from(p in SportsnetApi.Social.Post,
         where: p.sport_id == ^sport.id and p.city_id == ^city.id,
+        where: is_nil(p.deleted_at),
         order_by: [desc: p.inserted_at],
         preload: [:media, :comments, :user, :sport, :city]
       )

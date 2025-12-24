@@ -15,8 +15,9 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       %{conn: conn, token: token, user: user, city: city, sport: sport}
     end
 
-    test "return paginated posts by city and sport when authenticated", %{conn: conn, token: token, user: user, city: city, sport: sport} do
+    test "return paginated active posts by city and sport when authenticated", %{conn: conn, token: token, user: user, city: city, sport: sport} do
       insert_list(3, :post_with_media, %{user: user, city: city, sport: sport})
+      insert(:post_with_media, %{user: user, city: city, sport: sport, deleted_at: DateTime.utc_now()})
 
       other_sport = insert(:sport, slug: "sport_slug_1")
       other_city = insert(:city, slug: "city_slug_1")
@@ -63,16 +64,18 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         }
       """
 
+      # Request 4 posts when having 3 active posts and 1 deleted
       variables = %{
         "citySlug" => city.slug,
         "sportSlug" => sport.slug,
-        "first" => 2
+        "first" => 4
       }
 
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
         |> post("/graphql", %{query: query, variables: variables})
+
 
       assert %{"data" =>  %{"postsByCityAndSport" => %{
         "sport" => sport_response,
@@ -88,10 +91,11 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         "pageInfo" => page_info
       } = posts_connection
 
-      assert length(edges) == 2
+      # Match 3 active posts and ignore deleted one
+      assert length(edges) == 3
 
       assert %{
-        "hasNextPage" => true,
+        "hasNextPage" => false,
         "hasPreviousPage" => false,
         "startCursor" => start_cursor,
         "endCursor" => end_cursor
@@ -130,9 +134,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
     end
 
     test "fetches next page using cursor", %{conn: conn, token: token, user: user, city: city, sport: sport} do
-      insert(:post_with_media, %{user: user, city: city, sport: sport})
-      insert(:post_with_media, %{user: user, city: city, sport: sport})
-      insert(:post_with_media, %{user: user, city: city, sport: sport})
+      insert_list(3, :post_with_media, %{user: user, city: city, sport: sport})
 
       query = """
         query postsByCityAndSport($citySlug: String!, $sportSlug: String!, $first: Int, $after: String) {
