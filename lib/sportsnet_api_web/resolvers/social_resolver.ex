@@ -25,6 +25,8 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
 
       case Social.create_post(attrs, files) do
         {:ok, post} ->
+          post = Repo.preload(post, [:media, :comments, :user, :sport, :city])
+
           edge = %{
             node: post,
             cursor: Base.encode64("post:#{post.id}")

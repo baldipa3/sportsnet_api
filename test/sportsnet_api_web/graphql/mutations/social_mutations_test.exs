@@ -48,7 +48,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
   end
 
   describe "createPost mutation" do
-    test "creates a post with media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video]} do
+    test "creates a post with media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video], user: user} do
+      encoded_user_id = to_global_id("User", user.id)
+
       mutation = """
         mutation CreatePost($caption: String!, $sportId: ID!, $cityId: ID!, $media: [Upload!]) {
           createPost(caption: $caption, sportId: $sportId, cityId: $cityId, media: $media) {
@@ -61,6 +63,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
                   url
                   mediaType
                   filename
+                }
+                user {
+                  id
                 }
               }
             }
@@ -106,7 +111,10 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
                     "mediaType" => "image",
                     "url" => _
                   }
-                ]
+                ],
+                "user" => %{
+                  "id" => ^encoded_user_id
+                }
               }
             }
           }
@@ -114,7 +122,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       } = json_response(conn, 200)
     end
 
-    test "creates a post without media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
+    test "creates a post without media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, user: user} do
+      encoded_user_id = to_global_id("User", user.id)
+
       mutation = """
         mutation {
           createPost(caption: "A new Post without media", sportId: "#{encoded_sport_id}", cityId: "#{encoded_city_id}") {
@@ -122,6 +132,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
               node {
                 id
                 caption
+                user {
+                  id
+                }
               }
             }
           }
@@ -140,6 +153,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
               "node" => %{
                 "id" => _id,
                 "caption" => "A new Post without media",
+                "user" => %{
+                  "id" => ^encoded_user_id
+                }
               }
             }
           }

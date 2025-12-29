@@ -91,7 +91,6 @@ defmodule SportsnetApiWeb.Schema do
 
   node object :post do
     field :caption, :string
-    field :user_id, :id
     field :sport_id, :id
     field :city_id, :id
     field :inserted_at, :datetime
@@ -111,6 +110,12 @@ defmodule SportsnetApiWeb.Schema do
           _ ->
             {:ok, false}
         end
+      end
+    end
+
+    field :user, non_null(:user) do
+      resolve fn post, _, _ ->
+        {:ok, post.user}
       end
     end
   end

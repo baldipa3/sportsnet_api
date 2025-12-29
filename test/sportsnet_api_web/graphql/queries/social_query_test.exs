@@ -51,6 +51,9 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
                   media {
                     url
                   }
+                  user {
+                    id
+                  }
                 }
               }
               pageInfo {
@@ -109,6 +112,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
 
         assert %{
                  "id" => id,
+                 "user" => %{"id" => user_id},
                  "caption" => caption,
                  "insertedAt" => inserted_at,
                  "likesCount" => likes_count,
@@ -124,6 +128,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         assert is_boolean(liked_by_current_user)
         assert is_list(comments)
         assert is_list(media)
+        assert to_global_id("User", user.id) == user_id
 
         Enum.each(media, fn media_item ->
           assert %{"url" => url} = media_item
