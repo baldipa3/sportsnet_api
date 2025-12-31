@@ -1,6 +1,7 @@
 defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
   use SportsnetApiWeb.ConnCase, async: true
 
+  import SportsnetApi.GraphQLHelpers
   import Absinthe.Relay.Node
   import SportsnetApi.Factory
   import SportsnetApi.Accounts
@@ -49,16 +50,6 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
     }
   end
 
-  ##### TODO: Refactor Example
-    # assert %{"id" => ^encoded_post_id} = mutation_result(conn, "deletePost")
-  ####
-
-  # def mutation_result(conn, name) do
-  #   json(conn, 200)
-  #   |> Map.get("data")
-  #   |> Map.get(name)
-  # end
-
   describe "createPost mutation" do
     test "creates a post with media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video], user: user} do
       encoded_user_id = to_global_id("User", user.id)
@@ -103,35 +94,28 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
           "1" => video
         })
 
-      assert %{
-        "data" => %{
-          "createPost" => %{
-            "postEdge" => %{
-              "node" => %{
-                "id" => _id,
-                "caption" => "A new Post with media",
-                "media" => [
-                  %{
-                    "filename" => "test_video.mp4",
-                    "id" => _,
-                    "mediaType" => "video",
-                    "url" => _
-                  },
-                  %{
-                    "filename" => "test_image.jpg",
-                    "id" => _,
-                    "mediaType" => "image",
-                    "url" => _
-                  }
-                ],
-                "user" => %{
-                  "id" => ^encoded_user_id
-                }
-              }
-            }
-          }
+      response = mutation_result(conn, "createPost")
+      media = get_in(response, ["postEdge", "node", "media"])
+      caption = get_in(response, ["postEdge", "node", "caption"])
+      user_id = get_in(response, ["postEdge", "node", "user", "id"])
+
+      assert caption == "A new Post with media"
+      assert user_id == encoded_user_id
+
+      assert [
+        %{
+          "filename" => "test_video.mp4",
+          "id" => _,
+          "mediaType" => "video",
+          "url" => _
+        },
+        %{
+          "filename" => "test_image.jpg",
+          "id" => _,
+          "mediaType" => "image",
+          "url" => _
         }
-      } = json_response(conn, 200)
+      ] = media
     end
 
     test "creates a post without media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, user: user} do
@@ -153,26 +137,13 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         }
       """
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{"query" => mutation})
+      conn = post_graphql(conn, token, mutation)
+      response = mutation_result(conn, "createPost")
+      caption = get_in(response, ["postEdge", "node", "caption"])
+      user_id = get_in(response, ["postEdge", "node", "user", "id"])
 
-      assert %{
-        "data" => %{
-          "createPost" => %{
-            "postEdge" => %{
-              "node" => %{
-                "id" => _id,
-                "caption" => "A new Post without media",
-                "user" => %{
-                  "id" => ^encoded_user_id
-                }
-              }
-            }
-          }
-        }
-      } = json_response(conn, 200)
+      assert caption == "A new Post without media"
+      assert user_id == encoded_user_id
     end
 
     test "returns an error with invalid request data", %{conn: conn, token: token} do
@@ -189,17 +160,13 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         }
       """
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{"query" => mutation})
+      conn = post_graphql(conn, token, mutation)
+      response = errors_result(conn)
 
-      assert %{
-        "errors" => [
+      assert [
           %{"message" => "Argument \"sportId\" has invalid value null."},
           %{"message" => "Argument \"cityId\" has invalid value null."}
-        ]
-      } = json_response(conn, 200)
+        ] = response
     end
 
     test "returns an error when caption is blank", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id} do
@@ -216,16 +183,10 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         }
       """
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{"query" => mutation})
+      conn = post_graphql(conn, token, mutation)
+      response = errors_result(conn)
 
-      assert %{
-        "errors" => [
-          %{"message" => "caption can't be blank"},
-        ]
-      } = json_response(conn, 200)
+      assert [%{"message" => "caption can't be blank"}] = response
     end
   end
 
@@ -252,22 +213,18 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         }
       """
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{"query" => mutation})
+      conn = post_graphql(conn, token, mutation)
+      response = mutation_result(conn, "likePost")
+      post = get_in(response, ["post"])
 
-        assert %{
-          "data" => %{"likePost" => %{
-            "post" => %{
-              "likesCount" => likes_count,
-              "id" => post_id,
-              "likedByCurrentUser" => true
-            }
-          }}} = json_response(conn, 200)
+      assert %{
+        "likesCount" => likes_count,
+        "id" => post_id,
+        "likedByCurrentUser" => true
+      } = post
 
-        assert likes_count == 1
-        assert encoded_post_id == post_id
+      assert likes_count == 1
+      assert encoded_post_id == post_id
     end
 
     test "unlikes a post and return liked post number", %{conn: conn, user: user, post: post, token: token, encoded_post_id: encoded_post_id} do
@@ -285,22 +242,18 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         }
       """
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{"query" => mutation})
+      conn = post_graphql(conn, token, mutation)
+      response = mutation_result(conn, "likePost")
+      post = get_in(response, ["post"])
 
-        assert %{
-          "data" => %{"likePost" => %{
-            "post" => %{
-              "likesCount" => likes_count,
-              "id" => post_id,
-              "likedByCurrentUser" => false
-            }
-          }}} = json_response(conn, 200)
+      assert %{
+        "likesCount" => likes_count,
+        "id" => post_id,
+        "likedByCurrentUser" => false
+        } = post
 
-        assert likes_count == 0
-        assert encoded_post_id == post_id
+      assert likes_count == 0
+      assert encoded_post_id == post_id
     end
   end
 
@@ -321,25 +274,13 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         "id" => encoded_post_id
       }
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> put_req_header("content-type", "multipart/form-data")
-        |> post("/graphql", %{
-          "query" => mutation,
-          "variables" => Jason.encode!(variables)
-        })
+      conn = post_graphql(conn, token, mutation, variables)
+      response = mutation_result(conn, "deletePost")
+      post_id = get_in(response, ["id"])
 
       deleted_post = SportsnetApi.Repo.get!(SportsnetApi.Social.Post, post.id)
 
-      assert %{
-        "data" => %{
-          "deletePost" => %{
-            "id" => ^encoded_post_id
-          }
-        }
-      } = json_response(conn, 200)
-
+      assert post_id == encoded_post_id
       assert %{deleted_at: %DateTime{}} = deleted_post
     end
   end
@@ -364,24 +305,14 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         "caption" => "Edited post"
       }
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> put_req_header("content-type", "multipart/form-data")
-        |> post("/graphql", %{
-          "query" => mutation,
-          "variables" => Jason.encode!(variables)
-        })
+      conn = post_graphql(conn, token, mutation, variables)
+      response = mutation_result(conn, "editPost")
 
       assert %{
-        "data" => %{
-          "editPost" => %{
-            "id" => ^encoded_post_id,
-            "caption" => "Edited post",
-            "wasEdited" => true
-          }
-        }
-      } = json_response(conn, 200)
+        "id" => ^encoded_post_id,
+        "caption" => "Edited post",
+        "wasEdited" => true
+      } = response
 
       edit_post = Repo.get_by(PostEdit, post_id: post.id)
       assert edit_post != nil
@@ -410,22 +341,10 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         "caption" => "Edited post"
       }
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{user_2_token}")
-        |> put_req_header("content-type", "multipart/form-data")
-        |> post("/graphql", %{
-          "query" => mutation,
-          "variables" => Jason.encode!(variables)
-        })
+      conn = post_graphql(conn, user_2_token, mutation, variables)
+      response = errors_result(conn)
 
-      assert %{
-        "errors" => [
-          %{
-            "message" => "Unauthorized"
-          }
-        ]
-      } = json_response(conn, 200)
+      assert [%{"message" => "Unauthorized" }] = response
     end
 
     test "post cannot be edited after 15 min", %{conn: conn, token: token, user: user} do
@@ -447,22 +366,10 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         "caption" => "Edited post"
       }
 
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> put_req_header("content-type", "multipart/form-data")
-        |> post("/graphql", %{
-          "query" => mutation,
-          "variables" => Jason.encode!(variables)
-        })
+      conn = post_graphql(conn, token, mutation, variables)
+      response = errors_result(conn)
 
-      assert %{
-        "errors" => [
-          %{
-            "message" => "Posts can only be edited within 15 minutes of creation"
-          }
-        ]
-      } = json_response(conn, 200)
+      assert [%{"message" => "Posts can only be edited within 15 minutes of creation"}] = response
     end
   end
 end

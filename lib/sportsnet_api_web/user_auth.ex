@@ -76,7 +76,4 @@ defmodule SportsnetApiWeb.UserAuth do
 
   defp normalize_ip({_, _, _, _, _, _, _, _} = ip),
     do: ip |> :inet.ntoa() |> to_string()
-
-  defp normalize_ip(_),
-    do: nil
 end
