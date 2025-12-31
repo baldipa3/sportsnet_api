@@ -5,6 +5,8 @@ defmodule SportsnetApi.Social.Post do
   schema "posts" do
     field :caption, :string
     field :deleted_at, :utc_datetime
+    field :was_edited, :boolean, virtual: true, default: false
+
     belongs_to :user, SportsnetApi.Accounts.User
     belongs_to :sport, SportsnetApi.Sports.Sport
     belongs_to :city, SportsnetApi.Geography.City

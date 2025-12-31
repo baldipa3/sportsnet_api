@@ -87,19 +87,16 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
   end
 
   def delete_post(_parent, args, %{context: %{current_user: current_user}}) do
-    with {:ok, %{type: :post, id: id}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
-         post <- Repo.get(SportsnetApi.Social.Post, id),
-         post when not is_nil(post) <- post,
-         :ok <- authorize_post_owner(post.user_id, current_user.id) do
-
-      Social.delete_post(post)
-    else
-      nil -> {:error, "Post not found"}
-      {:error, reason} -> {:error, reason}
+    with {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
+        post_id <- String.to_integer(post_id_str) do
+      Social.delete_post(post_id, current_user)
     end
   end
 
-  defp authorize_post_owner(post_user_id, user_id)
-    when post_user_id == user_id, do: :ok
-  defp authorize_post_owner(_post, _user), do: {:error, "Unauthorized"}
+  def edit_post(_parent, args, %{context: %{current_user: current_user, ip_address: ip_address}}) do
+    with {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
+        post_id <- String.to_integer(post_id_str) do
+      Social.edit_post(post_id, args.caption, current_user, ip_address)
+    end
+  end
 end

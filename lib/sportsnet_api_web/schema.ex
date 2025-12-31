@@ -96,6 +96,7 @@ defmodule SportsnetApiWeb.Schema do
     field :inserted_at, :datetime
     field :media, list_of(:media)
     field :comments, list_of(:comment)
+    field :was_edited, :boolean
     field :likes_count, non_null(:integer) do
       resolve fn post, _, _ ->
         {:ok, SportsnetApi.Social.get_like_count(post.id)}
@@ -200,6 +201,14 @@ defmodule SportsnetApiWeb.Schema do
       arg :id, non_null(:id)
 
       resolve(&SocialResolver.delete_post/3)
+    end
+
+    @desc "Edit a post and record an edit_post"
+    field :edit_post, non_null(:post) do
+      arg :id, non_null(:id)
+      arg :caption, non_null(:string)
+
+      resolve(&SocialResolver.edit_post/3)
     end
   end
 end

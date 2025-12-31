@@ -6,7 +6,7 @@ defmodule SportsnetApi.Social do
   import Ecto.Query, warn: false
 
   alias SportsnetApi.Repo
-  alias SportsnetApi.Social.{ Post, Comment, Media, Like }
+  alias SportsnetApi.Social.{ Post, Comment, Media, Like, PostEdit }
 
   @doc """
   Creates a new post by the user, optionally with media files
@@ -168,9 +168,75 @@ defmodule SportsnetApi.Social do
     end
   end
 
-  def delete_post(post) do
-    post
-    |> Post.changeset(%{deleted_at: DateTime.utc_now()})
-    |> Repo.update()
+  def delete_post(post_id, current_user) do
+    with {:ok, post} <- fetch_post(post_id),
+        :ok <- verify_ownership(post.user_id, current_user.id) do
+      post
+      |> Post.changeset(%{deleted_at: DateTime.utc_now()})
+      |> Repo.update()
+    end
+  end
+
+  def edit_post(post_id, new_caption, current_user, ip_address) do
+    with {:ok, post} <- fetch_post(post_id),
+        :ok <- verify_ownership(post.user_id, current_user.id),
+        :ok <- verify_edit_window(post),
+        :ok <- verify_caption_changed(post, new_caption),
+        {:ok, updated_post} <- perform_edit(post, new_caption, current_user, ip_address) do
+      {:ok, updated_post}
+    end
+  end
+
+  defp verify_ownership(post_user_id, user_id)
+    when post_user_id == user_id, do: :ok
+  defp verify_ownership(_post, _user), do: {:error, "Unauthorized"}
+
+  defp fetch_post(post_id) do
+    case Repo.get(Post, post_id) do
+      nil -> {:error, "Post not found"}
+      post -> {:ok, Repo.preload(post, [:user, :media, :comments, :sport, :city])}
+    end
+  end
+
+  defp verify_edit_window(%Post{inserted_at: inserted_at}) do
+    now = DateTime.utc_now()
+    minutes_elapsed = DateTime.diff(now, inserted_at, :minute)
+
+    if minutes_elapsed <= 15 do
+      :ok
+    else
+      {:error, "Posts can only be edited within 15 minutes of creation"}
+    end
+  end
+
+  defp verify_caption_changed(%Post{caption: old_caption}, new_caption) do
+    old_trimmed = String.trim(old_caption || "")
+    new_trimmed = String.trim(new_caption)
+
+    if old_trimmed == new_trimmed do
+      {:error, "New caption must be different from the current caption"}
+    else
+      :ok
+    end
+  end
+
+  defp perform_edit(%Post{} = post, new_caption, current_user, ip_address) do
+    Repo.transaction(fn ->
+      %PostEdit{}
+      |> PostEdit.changeset(%{
+        old_caption: post.caption,
+        new_caption: new_caption,
+        user_id: current_user.id,
+        post_id: post.id,
+        ip_address: ip_address
+      })
+      |> Repo.insert!()
+
+      post
+      |> Post.changeset(%{caption: new_caption})
+      |> Repo.update!()
+      |> Repo.preload(:user)
+      |> Map.put(:was_edited, true)
+    end)
   end
 end

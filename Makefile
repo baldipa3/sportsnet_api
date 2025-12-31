@@ -21,9 +21,6 @@ db-migrate:
 db-seed:
 	docker exec backend mix run priv/repo/seeds.exs
 
-db-create:
-	mix ecto.gen.migration
-
 db-migration:
 	docker exec backend mix ecto.gen.migration $(ARGS)
 
@@ -60,3 +57,10 @@ gen-schema:
 	docker cp backend:/app/schema.graphql ${FRONTEND_DIR}/src/schema.graphql && \
 	docker exec backend rm /app/schema.graphql && \
 	echo "Schema copied to frontend src/schema.graphql"
+
+gen-token:
+	@echo "Requesting API token..." && \
+	curl -s -X POST http://localhost:4000/users/login \
+		-H "Content-Type: application/json" \
+		-d '{ "user": { "email": "john.doe@gmail.com", "password": "Password123" } }' \
+	| jq -r '.data.token'

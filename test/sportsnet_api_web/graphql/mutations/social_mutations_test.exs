@@ -6,6 +6,8 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
   import SportsnetApi.Accounts
 
   alias Plug.Upload
+  alias SportsnetApi.Repo
+  alias SportsnetApi.Social.PostEdit
 
   setup %{conn: conn} do
     user = insert(:user)
@@ -46,6 +48,16 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       user: user
     }
   end
+
+  ##### TODO: Refactor Example
+    # assert %{"id" => ^encoded_post_id} = mutation_result(conn, "deletePost")
+  ####
+
+  # def mutation_result(conn, name) do
+  #   json(conn, 200)
+  #   |> Map.get("data")
+  #   |> Map.get(name)
+  # end
 
   describe "createPost mutation" do
     test "creates a post with media files", %{conn: conn, token: token, encoded_city_id: encoded_city_id, encoded_sport_id: encoded_sport_id, media: [image, video], user: user} do
@@ -318,7 +330,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
           "variables" => Jason.encode!(variables)
         })
 
-      updated_post = SportsnetApi.Repo.get!(SportsnetApi.Social.Post, post.id)
+      deleted_post = SportsnetApi.Repo.get!(SportsnetApi.Social.Post, post.id)
 
       assert %{
         "data" => %{
@@ -328,7 +340,129 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
         }
       } = json_response(conn, 200)
 
-      assert %{deleted_at: %DateTime{}} = updated_post
+      assert %{deleted_at: %DateTime{}} = deleted_post
+    end
+  end
+
+  describe "editPost mutation" do
+    test "post owner can edit its own post", %{conn: conn, token: token, user: user} do
+      post = insert(:post, user: user)
+      encoded_post_id = to_global_id("Post", post.id)
+
+      mutation = """
+        mutation editPost($id: ID!, $caption: String!) {
+          editPost(id: $id, caption: $caption) {
+            id
+            caption
+            wasEdited
+          }
+        }
+      """
+
+      variables = %{
+        "id" => encoded_post_id,
+        "caption" => "Edited post"
+      }
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/graphql", %{
+          "query" => mutation,
+          "variables" => Jason.encode!(variables)
+        })
+
+      assert %{
+        "data" => %{
+          "editPost" => %{
+            "id" => ^encoded_post_id,
+            "caption" => "Edited post",
+            "wasEdited" => true
+          }
+        }
+      } = json_response(conn, 200)
+
+      edit_post = Repo.get_by(PostEdit, post_id: post.id)
+      assert edit_post != nil
+      assert edit_post.old_caption == post.caption
+      assert edit_post.new_caption == "Edited post"
+    end
+
+    test "users cannot edit other user post", %{conn: conn, user: user} do
+      user_2 = insert(:user)
+      user_2_token = create_user_api_token(user_2)
+      post = insert(:post, user: user)
+      encoded_post_id = to_global_id("Post", post.id)
+
+      mutation = """
+        mutation editPost($id: ID!, $caption: String!) {
+          editPost(id: $id, caption: $caption) {
+            id
+            caption
+            wasEdited
+          }
+        }
+      """
+
+      variables = %{
+        "id" => encoded_post_id,
+        "caption" => "Edited post"
+      }
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{user_2_token}")
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/graphql", %{
+          "query" => mutation,
+          "variables" => Jason.encode!(variables)
+        })
+
+      assert %{
+        "errors" => [
+          %{
+            "message" => "Unauthorized"
+          }
+        ]
+      } = json_response(conn, 200)
+    end
+
+    test "post cannot be edited after 15 min", %{conn: conn, token: token, user: user} do
+      post = insert(:post, user: user, inserted_at: DateTime.add(DateTime.utc_now(), -16 * 60, :second))
+      encoded_post_id = to_global_id("Post", post.id)
+
+      mutation = """
+        mutation editPost($id: ID!, $caption: String!) {
+          editPost(id: $id, caption: $caption) {
+            id
+            caption
+            wasEdited
+          }
+        }
+      """
+
+      variables = %{
+        "id" => encoded_post_id,
+        "caption" => "Edited post"
+      }
+
+      conn =
+        conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> put_req_header("content-type", "multipart/form-data")
+        |> post("/graphql", %{
+          "query" => mutation,
+          "variables" => Jason.encode!(variables)
+        })
+
+      assert %{
+        "errors" => [
+          %{
+            "message" => "Posts can only be edited within 15 minutes of creation"
+          }
+        ]
+      } = json_response(conn, 200)
     end
   end
 end

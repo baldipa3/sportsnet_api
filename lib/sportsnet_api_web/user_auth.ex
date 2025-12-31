@@ -52,9 +52,17 @@ defmodule SportsnetApiWeb.UserAuth do
   def fetch_api_user(conn, _opts) do
     with ["Bearer " <> token] <- get_req_header(conn, "authorization"),
         {:ok, user} <- Accounts.fetch_user_by_api_token(token) do
+      ip_address =
+        conn.remote_ip
+        |> normalize_ip()
+
       conn
       |> assign(:current_user, user)
-      |> Absinthe.Plug.put_options(context: %{current_user: user})
+      |> Absinthe.Plug.put_options(
+        context: %{
+          current_user: user,
+          ip_address: ip_address
+        })
     else
       _ ->
         conn
@@ -62,4 +70,13 @@ defmodule SportsnetApiWeb.UserAuth do
         |> halt()
     end
   end
+
+  defp normalize_ip({_, _, _, _} = ip),
+  do: ip |> :inet.ntoa() |> to_string()
+
+  defp normalize_ip({_, _, _, _, _, _, _, _} = ip),
+    do: ip |> :inet.ntoa() |> to_string()
+
+  defp normalize_ip(_),
+    do: nil
 end
