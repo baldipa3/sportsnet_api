@@ -90,7 +90,7 @@ defmodule SportsnetApiWeb.Schema do
   end
 
   node object :post do
-    field :caption, :string
+    field :caption, non_null(:string)
     field :sport_id, :id
     field :city_id, :id
     field :inserted_at, :datetime

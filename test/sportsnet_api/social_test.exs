@@ -2,7 +2,7 @@ defmodule SportsnetApi.SocialTest do
   use SportsnetApi.DataCase
 
   alias SportsnetApi.Social
-  alias SportsnetApi.Social.{Post, Comment, Like}
+  alias SportsnetApi.Social.{Post, Comment, Like, PostEdit}
   alias Plug.Upload
 
   import SportsnetApi.Factory
@@ -179,6 +179,126 @@ defmodule SportsnetApi.SocialTest do
 
       assert {:ok, :unliked} = Social.like_post(attrs)
       refute Repo.get(Like, like.id)
+    end
+  end
+
+  describe "edit_post/4" do
+    test "successfully edits a post with valid attributes" do
+      user = insert(:user)
+      post = insert(:post, user: user, caption: "Original caption")
+
+      assert {:ok, %Post{} = updated_post} =
+        Social.edit_post(post.id, "Updated caption", user, "127.0.0.1")
+
+      assert updated_post.caption == "Updated caption"
+      assert updated_post.was_edited == true
+      assert updated_post.id == post.id
+
+      post_edit = Repo.get_by(PostEdit, post_id: post.id)
+      assert post_edit != nil
+      assert post_edit.old_caption == "Original caption"
+      assert post_edit.new_caption == "Updated caption"
+      assert post_edit.user_id == user.id
+      assert post_edit.ip_address == "127.0.0.1"
+    end
+
+    test "returns error when post does not exist" do
+      user = insert(:user)
+      non_existent_id = user.id + 1
+
+      assert {:error, "Post not found"} =
+        Social.edit_post(non_existent_id, "New caption", user, "127.0.0.1")
+    end
+
+    test "returns error when user is not the post owner" do
+      owner = insert(:user)
+      other_user = insert(:user)
+      post = insert(:post, user: owner, caption: "Original caption")
+
+      assert {:error, "Unauthorized"} =
+        Social.edit_post(post.id, "New caption", other_user, "127.0.0.1")
+    end
+
+    test "returns error when edit window has expired" do
+      user = insert(:user)
+      past_time = DateTime.add(DateTime.utc_now(), -20, :minute)
+      post = insert(:post, user: user, caption: "Original caption", inserted_at: past_time)
+
+      assert {:error, "Posts can only be edited within 15 minutes of creation"} =
+        Social.edit_post(post.id, "New caption", user, "127.0.0.1")
+    end
+
+    test "returns error when caption has not changed" do
+      user = insert(:user)
+      post = insert(:post, user: user, caption: "Same caption")
+
+      assert {:error, "New caption must be different from the current caption"} =
+        Social.edit_post(post.id, "Same caption", user, "127.0.0.1")
+    end
+
+    test "returns error when caption has not changed (ignoring whitespace)" do
+      user = insert(:user)
+      post = insert(:post, user: user, caption: "Same caption")
+
+      assert {:error, "New caption must be different from the current caption"} =
+        Social.edit_post(post.id, "  Same caption  ", user, "127.0.0.1")
+    end
+
+    test "allows editing within the 15-minute window" do
+      user = insert(:user)
+      recent_time = DateTime.add(DateTime.utc_now(), -10, :minute)
+      post = insert(:post, user: user, caption: "Original caption", inserted_at: recent_time)
+
+      assert {:ok, %Post{} = updated_post} =
+        Social.edit_post(post.id, "Updated caption", user, "127.0.0.1")
+
+      assert updated_post.caption == "Updated caption"
+    end
+
+    test "creates multiple PostEdit records for multiple edits" do
+      user = insert(:user)
+      post = insert(:post, user: user, caption: "Original caption")
+
+      assert {:ok, _} = Social.edit_post(post.id, "First edit", user, "127.0.0.1")
+
+      assert {:ok, _} = Social.edit_post(post.id, "Second edit", user, "192.168.1.1")
+
+      post_edits = Repo.all(from pe in PostEdit, where: pe.post_id == ^post.id)
+      assert length(post_edits) == 2
+
+      [first_edit, second_edit] = Enum.sort_by(post_edits, & &1.inserted_at)
+      assert first_edit.new_caption == "First edit"
+      assert second_edit.new_caption == "Second edit"
+      assert second_edit.old_caption == "First edit"
+    end
+  end
+
+  describe "delete_post/2" do
+    test "successfully soft deletes a post by the owner" do
+      user = insert(:user)
+      post = insert(:post, user: user)
+
+      assert {:ok, %Post{} = deleted_post} = Social.delete_post(post.id, user)
+      assert deleted_post.deleted_at != nil
+      assert deleted_post.id == post.id
+
+      db_post = Repo.get(Post, post.id)
+      assert db_post.deleted_at != nil
+    end
+
+    test "returns error when post does not exist" do
+      user = insert(:user)
+      non_existent_id = user.id + 1
+
+      assert {:error, "Post not found"} = Social.delete_post(non_existent_id, user)
+    end
+
+    test "returns error when user is not the post owner" do
+      owner = insert(:user)
+      other_user = insert(:user)
+      post = insert(:post, user: owner)
+
+      assert {:error, "Unauthorized"} = Social.delete_post(post.id, other_user)
     end
   end
 end
