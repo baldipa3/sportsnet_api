@@ -42,7 +42,7 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     end
   end
 
-  def posts_by_city_and_sport(_parent, args, _resolution) do
+  def build_sport_city_feed(_parent, args, _resolution) do
     with {:ok, sport} <- Sports.get_sport_by_slug(args.sport_slug),
          {:ok, city} <- Geography.get_city_by_slug(args.city_slug) do
       # Create a virtual ID from sport and city IDs
@@ -97,6 +97,46 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     with {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
         post_id <- String.to_integer(post_id_str) do
       Social.edit_post(post_id, args.caption, current_user, ip_address)
+    end
+  end
+
+  def comments_connection(post, args, _resolution) do
+    query =
+      from(c in SportsnetApi.Social.Comment,
+        where: c.post_id == ^post.id,
+        where: is_nil(c.deleted_at),
+        order_by: [desc: c.inserted_at],
+        preload: [:user]
+      )
+
+    Absinthe.Relay.Connection.from_query(query, &SportsnetApi.Repo.all/1, args)
+  end
+
+  def create_comment(_parent, args, %{context: %{current_user: current_user}}) do
+    with  {:ok, %{type: :post, id: post_id_str}} <- from_global_id(args.post_id, SportsnetApiWeb.Schema),
+          post_id <- String.to_integer(post_id_str) do
+
+      attrs = Map.merge(args, %{
+        user_id: current_user.id,
+        post_id: post_id,
+      })
+
+      case Social.create_comment(attrs) do
+        {:ok, comment} ->
+          comment = Repo.preload(comment, [:user])
+
+          edge = %{
+            node: comment,
+            cursor: Base.encode64("comment:#{comment.id}")
+          }
+
+          {:ok, %{comment_edge: edge}}
+
+        {:error, %Ecto.Changeset{} = changeset} ->
+          {:error, format_changeset_errors(changeset)}
+        {:error, reason} ->
+          {:error, reason}
+        end
     end
   end
 end

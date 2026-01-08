@@ -4,10 +4,12 @@ defmodule SportsnetApi.Factory do
   def country_factory do
     country_name = Faker.Address.country()
 
-    %SportsnetApi.Geography.Country{
-      name: country_name,
-      code: country_name |> String.upcase() |> String.slice(0, 2)
-    }
+    sequence(:country_seq, fn n ->
+      %SportsnetApi.Geography.Country{
+          name: "#{country_name} - #{n}",
+          code: country_name |> String.upcase() |> String.slice(0, 2)
+        }
+    end)
   end
 
   def city_factory do
@@ -15,7 +17,7 @@ defmodule SportsnetApi.Factory do
 
     %SportsnetApi.Geography.City{
       name: city,
-      slug: String.downcase(city),
+      slug: String.downcase(sequence(:city_slug, &"#{city}-#{&1}")),
       country: build(:country)
     }
   end
@@ -70,6 +72,14 @@ defmodule SportsnetApi.Factory do
     %SportsnetApi.Social.Like{
       post: build(:post),
       user: build(:user)
+    }
+  end
+
+  def comment_factory do
+    %SportsnetApi.Social.Comment{
+      content: Faker.Lorem.paragraph(),
+      user: build(:user),
+      post: build(:post),
     }
   end
 end

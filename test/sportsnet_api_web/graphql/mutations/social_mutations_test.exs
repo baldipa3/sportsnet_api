@@ -206,7 +206,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
           likePost(id: "#{encoded_post_id}", doesLike: true) {
             post {
               id
-              likesCount
+              postLikesCount
               likedByCurrentUser
             }
           }
@@ -218,7 +218,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       post = get_in(response, ["post"])
 
       assert %{
-        "likesCount" => likes_count,
+        "postLikesCount" => likes_count,
         "id" => post_id,
         "likedByCurrentUser" => true
       } = post
@@ -235,7 +235,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
           likePost(id: "#{encoded_post_id}", doesLike: false) {
             post {
               id
-              likesCount
+              postLikesCount
               likedByCurrentUser
             }
           }
@@ -247,7 +247,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
       post = get_in(response, ["post"])
 
       assert %{
-        "likesCount" => likes_count,
+        "postLikesCount" => likes_count,
         "id" => post_id,
         "likedByCurrentUser" => false
         } = post
@@ -371,5 +371,9 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
       assert [%{"message" => "Posts can only be edited within 15 minutes of creation"}] = response
     end
+  end
+
+  describe "createComment mutation" do
+
   end
 end

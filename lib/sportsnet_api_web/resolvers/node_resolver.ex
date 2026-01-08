@@ -3,7 +3,7 @@ defmodule SportsnetApiWeb.Resolvers.NodeResolver do
   alias SportsnetApi.Geography.{Country, City}
   alias SportsnetApi.Sports.Sport
   alias SportsnetApi.Accounts.User
-  alias SportsnetApi.Social.{Media, Post}
+  alias SportsnetApi.Social.{Media, Post, Comment}
   alias SportsnetApiWeb.Helpers.FeedId
 
   def resolve_node(%{type: :country, id: id}, _resolution) do
@@ -28,6 +28,11 @@ defmodule SportsnetApiWeb.Resolvers.NodeResolver do
 
   def resolve_node(%{type: :post, id: id}, _resolution) do
     post = Post |> Repo.get(id) |> Repo.preload([:media, :comments])
+    {:ok, post}
+  end
+
+  def resolve_node(%{type: :comment, id: id}, _resolution) do
+    post = Comment |> Repo.get(id)
     {:ok, post}
   end
 

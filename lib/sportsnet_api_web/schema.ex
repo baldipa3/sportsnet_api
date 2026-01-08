@@ -87,6 +87,18 @@ defmodule SportsnetApiWeb.Schema do
 
   node object :comment do
     field :content, :string
+    field :post_id, :id
+    field :comment_likes_count, non_null(:integer) do
+      resolve fn comment, _, _ ->
+        {:ok, SportsnetApi.Social.get_like_count(comment.id, :comment)}
+      end
+    end
+
+    field :user, non_null(:user) do
+      resolve fn comment, _, _ ->
+        {:ok, comment.user}
+      end
+    end
   end
 
   node object :post do
@@ -95,11 +107,10 @@ defmodule SportsnetApiWeb.Schema do
     field :city_id, :id
     field :inserted_at, :datetime
     field :media, list_of(:media)
-    field :comments, list_of(:comment)
     field :was_edited, :boolean
-    field :likes_count, non_null(:integer) do
+    field :post_likes_count, non_null(:integer) do
       resolve fn post, _, _ ->
-        {:ok, SportsnetApi.Social.get_like_count(post.id)}
+        {:ok, SportsnetApi.Social.get_like_count(post.id, :post)}
       end
     end
 
@@ -119,9 +130,14 @@ defmodule SportsnetApiWeb.Schema do
         {:ok, post.user}
       end
     end
+
+    connection field :comments, node_type: :comment do
+      resolve(&SocialResolver.comments_connection/3)
+    end
   end
 
   connection node_type: :post
+  connection node_type: :comment
 
   object :like_post_payload do
     field :post, non_null(:post)
@@ -138,6 +154,10 @@ defmodule SportsnetApiWeb.Schema do
 
   object :create_post_payload do
     field :post_edge, non_null(:post_edge)
+  end
+
+  object :create_comment_payload do
+    field :comment_edge, non_null(:comment_edge)
   end
 
   query do
@@ -160,7 +180,7 @@ defmodule SportsnetApiWeb.Schema do
       arg :city_slug, :string
       arg :sport_slug, :string
 
-      resolve(&SocialResolver.posts_by_city_and_sport/3)
+      resolve(&SocialResolver.build_sport_city_feed/3)
     end
 
     @desc "Get current authenticated user"
@@ -209,6 +229,15 @@ defmodule SportsnetApiWeb.Schema do
       arg :caption, non_null(:string)
 
       resolve(&SocialResolver.edit_post/3)
+    end
+
+    @desc "Create a new comment for a post"
+    field :create_comment, :create_comment_payload do
+      arg :content, non_null(:string)
+      arg :post_id, non_null(:id)
+      arg :user_id, non_null(:id)
+
+      resolve(&SocialResolver.create_comment/3)
     end
   end
 end

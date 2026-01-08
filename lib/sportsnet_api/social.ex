@@ -54,23 +54,6 @@ defmodule SportsnetApi.Social do
     end)
   end
 
-  @doc """
-  Creates a new Post Comment by the user
-  ## Examples
-
-    iex> create_comment(%{field: value})
-    {:ok, %Comment{}}
-
-    iex> create_comment(%{field: bad_value})
-    {:error, %Ecto.Changeset{}}
-  """
-  @spec create_comment(map()) :: {:ok, Comment} | {:error, Ecto.Changeset.t()}
-  def create_comment(attrs) do
-    %Comment{}
-    |> Comment.changeset(attrs)
-    |> Repo.insert()
-  end
-
   defp insert_post(attrs) do
     %Post{}
     |> Post.changeset(attrs)
@@ -113,10 +96,7 @@ defmodule SportsnetApi.Social do
   def like_post(%{does_like: true, user_id: user_id, post_id: post_id}) do
     %Like{}
     |> Like.changeset(%{user_id: user_id, post_id: post_id})
-    |> Repo.insert(
-      on_conflict: :nothing,
-      conflict_target: [:user_id, :post_id]
-    )
+    |> Repo.insert(on_conflict: :nothing)
   end
 
   def like_post(%{does_like: false, user_id: user_id, post_id: post_id}) do
@@ -138,11 +118,19 @@ defmodule SportsnetApi.Social do
   end
 
   @doc """
-  Get like count for a post
+  Get like count for a post or a comment
   """
-  def get_like_count(post_id) do
+  def get_like_count(id, :post) do
     query = from l in Like,
-      where: l.post_id == ^post_id,
+      where: l.post_id == ^id,
+      select: count(l.id)
+
+    Repo.one(query)
+  end
+
+  def get_like_count(id, :comment) do
+    query = from l in Like,
+      where: l.comment_id == ^id,
       select: count(l.id)
 
     Repo.one(query)
@@ -185,6 +173,13 @@ defmodule SportsnetApi.Social do
         {:ok, updated_post} <- perform_edit(post, new_caption, current_user, ip_address) do
       {:ok, updated_post}
     end
+  end
+
+  def list_comments_for_post(post_id) do
+    Comment
+    |> where([c], c.post_id == ^post_id)
+    |> order_by(asc: :inserted_at)
+    |> Repo.all
   end
 
   defp verify_ownership(post_user_id, user_id)
@@ -238,5 +233,21 @@ defmodule SportsnetApi.Social do
       |> Repo.preload(:user)
       |> Map.put(:was_edited, true)
     end)
+  end
+
+  def create_comment(attrs) do
+    Repo.transaction(fn ->
+      with {:ok, comment} <- insert_comment(attrs) do
+        comment
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+  end
+
+  defp insert_comment(attrs) do
+    %Comment{}
+    |> Comment.changeset(attrs)
+    |> Repo.insert()
   end
 end

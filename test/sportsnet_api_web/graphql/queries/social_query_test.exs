@@ -43,10 +43,14 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
                   id
                   caption
                   insertedAt
-                  likesCount
+                  postLikesCount
                   likedByCurrentUser
-                  comments {
-                    content
+                  comments(first: 10) {
+                    edges {
+                      node {
+                        content
+                      }
+                    }
                   }
                   media {
                     url
@@ -83,7 +87,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       assert %{"data" =>  %{"postsByCityAndSport" => %{
         "sport" => sport_response,
         "city" => city_response,
-        "posts" => posts_connection
+        "posts" => posts_connection,
       }}} = json_response(conn, 200)
 
       assert to_global_id("Sport", sport.id) == sport_response["id"]
@@ -115,7 +119,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
                  "user" => %{"id" => user_id},
                  "caption" => caption,
                  "insertedAt" => inserted_at,
-                 "likesCount" => likes_count,
+                 "postLikesCount" => likes_count,
                  "likedByCurrentUser" => liked_by_current_user,
                  "comments" => comments,
                  "media" => media
@@ -126,7 +130,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
         assert is_binary(inserted_at)
         assert is_integer(likes_count)
         assert is_boolean(liked_by_current_user)
-        assert is_list(comments)
+        assert %{"edges" => []} = comments
         assert is_list(media)
         assert to_global_id("User", user.id) == user_id
 
@@ -138,7 +142,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       end)
     end
 
-    test "fetches next page using cursor", %{conn: conn, token: token, user: user, city: city, sport: sport} do
+    test "fetches next post page using cursor", %{conn: conn, token: token, user: user, city: city, sport: sport} do
       insert_list(3, :post_with_media, %{user: user, city: city, sport: sport})
 
       query = """
@@ -201,7 +205,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       assert length(edges) == 1
     end
 
-    test "can refetch feed by node ID", %{conn: conn, token: token, city: city, sport: sport} do
+    test "can refetch posts feed by node ID", %{conn: conn, token: token, city: city, sport: sport} do
       query1 = """
         query {
           postsByCityAndSport(citySlug: "#{city.slug}", sportSlug: "#{sport.slug}") {
@@ -241,6 +245,131 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
 
       assert sport_name == sport.name
       assert city_name == city.name
+    end
+  end
+
+  describe "comments pagination" do
+    setup %{conn: conn} do
+      user = insert(:user)
+      city = insert(:city)
+      sport = insert(:sport)
+      token = create_user_api_token(user)
+      post = insert(:post_with_media, %{user: user, city: city, sport: sport})
+      comments = insert_list(5, :comment, %{post: post, user: user})
+
+      %{conn: conn, token: token, post: post, comments: comments}
+    end
+
+    test "fetches paginated comments for a post", %{conn: conn, token: token, post: post} do
+      post_global_id = to_global_id("Post", post.id)
+
+      query = """
+        query($postId: ID!, $first: Int, $after: String) {
+          node(id: $postId) {
+            ... on Post {
+              id
+              caption
+              comments(first: $first, after: $after) {
+                edges {
+                  node {
+                    id
+                    content
+                  }
+                  cursor
+                }
+                pageInfo {
+                  hasNextPage
+                  hasPreviousPage
+                  startCursor
+                  endCursor
+                }
+              }
+            }
+          }
+        }
+      """
+
+      variables = %{
+        "postId" => post_global_id,
+        "first" => 3
+      }
+
+      conn = conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: query, variables: variables})
+
+      assert %{
+        "data" => %{
+          "node" => %{
+            "comments" => %{
+              "edges" => edges,
+              "pageInfo" => %{
+                "hasNextPage" => has_next,
+                "endCursor" => end_cursor
+              }
+            }
+          }
+        }
+      } = json_response(conn, 200)
+
+      assert length(edges) == 3
+      assert has_next == true
+      assert is_binary(end_cursor)
+    end
+
+    test "fetches next page of comments using cursor", %{conn: conn, token: token, post: post} do
+      post_global_id = to_global_id("Post", post.id)
+
+      query = """
+        query($postId: ID!, $first: Int, $after: String) {
+          node(id: $postId) {
+            ... on Post {
+              comments(first: $first, after: $after) {
+                edges {
+                  node {
+                    id
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+              }
+            }
+          }
+        }
+      """
+
+      # First page
+      variables1 = %{"postId" => post_global_id, "first" => 3}
+
+      conn1 = conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: query, variables: variables1})
+
+      %{"data" => %{"node" => %{"comments" => %{
+        "pageInfo" => %{"endCursor" => cursor}
+      }}}} = json_response(conn1, 200)
+
+      # Second page
+      variables2 = %{"postId" => post_global_id, "first" => 3, "after" => cursor}
+
+      conn2 = build_conn()
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: query, variables: variables2})
+
+      assert %{
+        "data" => %{
+          "node" => %{
+            "comments" => %{
+              "edges" => edges,
+              "pageInfo" => %{"hasNextPage" => false}
+            }
+          }
+        }
+      } = json_response(conn2, 200)
+
+      assert length(edges) == 2  # Remaining comments
     end
   end
 end
