@@ -8,6 +8,8 @@ defmodule SportsnetApiWeb.Schema do
   alias SportsnetApiWeb.Resolvers.GeographyResolver
   alias SportsnetApiWeb.Resolvers.AccountsResolver
 
+  import Absinthe.Relay.Node
+
   import_types Absinthe.Plug.Types
   import_types Absinthe.Type.Custom
 
@@ -19,6 +21,7 @@ defmodule SportsnetApiWeb.Schema do
       %SportsnetApi.Accounts.User{}, _ -> :user
       %SportsnetApi.Social.Media{}, _ -> :media
       %SportsnetApi.Social.Post{}, _ -> :post
+      %SportsnetApi.Social.Comment{}, _ -> :comment
       %{id: _, sport: _, city: _}, _ -> :sport_city_feed
       _, _ ->
         nil
@@ -87,10 +90,17 @@ defmodule SportsnetApiWeb.Schema do
 
   node object :comment do
     field :content, :string
-    field :post_id, :id
+    field :inserted_at, :datetime
+
     field :comment_likes_count, non_null(:integer) do
       resolve fn comment, _, _ ->
         {:ok, SportsnetApi.Social.get_like_count(comment.id, :comment)}
+      end
+    end
+
+    field :replies_count, non_null(:integer) do
+      resolve fn comment, _, _ ->
+        {:ok, SportsnetApi.Social.get_replies_count(comment.id)}
       end
     end
 
@@ -98,6 +108,25 @@ defmodule SportsnetApiWeb.Schema do
       resolve fn comment, _, _ ->
         {:ok, comment.user}
       end
+    end
+
+    field :post_id, :id do
+      resolve fn comment, _, _ ->
+        {:ok, to_global_id("Post", comment.post_id, SportsnetApiWeb.Schema)}
+      end
+    end
+
+    field :parent_comment_id, :id do
+      resolve fn comment, _, _ ->
+        case comment.parent_comment_id do
+          nil -> {:ok, nil}
+          id -> {:ok, to_global_id("Comment", id, SportsnetApiWeb.Schema)}
+        end
+      end
+    end
+
+    connection field :replies, node_type: :comment do
+      resolve(&SocialResolver.replies_connection/3)
     end
   end
 
@@ -158,6 +187,7 @@ defmodule SportsnetApiWeb.Schema do
 
   object :create_comment_payload do
     field :comment_edge, non_null(:comment_edge)
+    field :parent, non_null(:node)
   end
 
   query do
@@ -235,7 +265,7 @@ defmodule SportsnetApiWeb.Schema do
     field :create_comment, :create_comment_payload do
       arg :content, non_null(:string)
       arg :post_id, non_null(:id)
-      arg :user_id, non_null(:id)
+      arg :parent_comment_id, :id
 
       resolve(&SocialResolver.create_comment/3)
     end

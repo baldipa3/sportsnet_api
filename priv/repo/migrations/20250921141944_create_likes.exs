@@ -1,4 +1,4 @@
-defmodule SportsnetApi.Repo.Migrations.AddLikesTable do
+defmodule SportsnetApi.Repo.Migrations.CreateLikes do
   use Ecto.Migration
 
   def change do

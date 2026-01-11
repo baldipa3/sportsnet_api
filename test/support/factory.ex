@@ -3,13 +3,12 @@ defmodule SportsnetApi.Factory do
 
   def country_factory do
     country_name = Faker.Address.country()
+    base_code = country_name |> String.upcase() |> String.slice(0, 2)
 
-    sequence(:country_seq, fn n ->
-      %SportsnetApi.Geography.Country{
-          name: "#{country_name} - #{n}",
-          code: country_name |> String.upcase() |> String.slice(0, 2)
-        }
-    end)
+    %SportsnetApi.Geography.Country{
+      name: sequence(:country_name, &"#{country_name} - #{&1}"),
+      code: sequence(:country_code, &"#{base_code}#{&1}")
+    }
   end
 
   def city_factory do
@@ -80,6 +79,7 @@ defmodule SportsnetApi.Factory do
       content: Faker.Lorem.paragraph(),
       user: build(:user),
       post: build(:post),
+      parent_comment: nil
     }
   end
 end

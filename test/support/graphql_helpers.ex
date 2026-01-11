@@ -22,7 +22,3 @@ defmodule SportsnetApi.GraphQLHelpers do
     |> Map.get("errors")
   end
 end
-
-##### TODO: Refactor Example
-  # assert %{"id" => ^encoded_post_id} = mutation_result(conn, "deletePost")
-####

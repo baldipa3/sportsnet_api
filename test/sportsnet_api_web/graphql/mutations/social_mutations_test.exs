@@ -374,6 +374,91 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
   end
 
   describe "createComment mutation" do
+    test "creates a comment for a post", %{conn: conn, token: token, user: user} do
+      post = insert(:post, user: user)
+      encoded_post_id = to_global_id("Post", post.id)
+      encoded_user_id = to_global_id("User", user.id)
 
+      mutation = """
+        mutation createComment($postId: ID!, $parentCommentId: ID, $content: String!) {
+          createComment(postId: $postId, parentCommentId: $parentCommentId, content: $content) {
+            commentEdge {
+              node {
+                id
+                content
+                user {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        }
+      """
+
+      variables = %{
+        "postId" => encoded_post_id,
+        "content" => "A new comment for a post"
+      }
+
+      conn = post_graphql(conn, token, mutation, variables)
+      response = mutation_result(conn, "createComment")
+
+      content = get_in(response, ["commentEdge", "node", "content"])
+      user_id = get_in(response, ["commentEdge", "node", "user", "id"])
+
+      assert content == "A new comment for a post"
+      assert user_id == encoded_user_id
+    end
+
+    test "creates a reply for a comment", %{conn: conn, token: token, user: user} do
+      post = insert(:post, user: user)
+      parent_comment = insert(:comment, post: post)
+
+      encoded_post_id = to_global_id("Post", post.id)
+      encoded_parent_comment_id = to_global_id("Comment", parent_comment.id)
+
+      mutation = """
+        mutation createComment($postId: ID!, $parentCommentId: ID, $content: String!) {
+          createComment(postId: $postId, parentCommentId: $parentCommentId, content: $content) {
+            commentEdge {
+              node {
+                id
+                content
+                parentCommentId
+                user {
+                  id
+                  name
+                }
+              }
+            }
+            parent {
+              id
+            }
+          }
+        }
+      """
+
+      variables = %{
+        "postId" => encoded_post_id,
+        "content" => "This is a reply",
+        "parentCommentId" => encoded_parent_comment_id
+      }
+
+      conn = post_graphql(conn, token, mutation, variables)
+      response = mutation_result(conn, "createComment")
+
+      node = get_in(response, ["commentEdge", "node"])
+
+      assert node["content"] == "This is a reply"
+      assert node["parentCommentId"] == encoded_parent_comment_id
+
+      {:ok, %{id: internal_id}} = from_global_id(node["id"], SportsnetApiWeb.Schema)
+
+      comment_in_db = Repo.get!(SportsnetApi.Social.Comment, internal_id)
+
+      assert comment_in_db.parent_comment_id == parent_comment.id
+      assert comment_in_db.post_id == post.id
+    end
   end
 end

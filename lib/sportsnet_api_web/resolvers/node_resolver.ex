@@ -32,8 +32,8 @@ defmodule SportsnetApiWeb.Resolvers.NodeResolver do
   end
 
   def resolve_node(%{type: :comment, id: id}, _resolution) do
-    post = Comment |> Repo.get(id)
-    {:ok, post}
+    comment = Comment |> Repo.get(id) |> Repo.preload([:user])
+    {:ok, comment}
   end
 
   def resolve_node(%{type: :sport_city_feed, id: id}, _resolution) do

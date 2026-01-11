@@ -6,43 +6,19 @@ defmodule SportsnetApi.Social do
   import Ecto.Query, warn: false
 
   alias SportsnetApi.Repo
-  alias SportsnetApi.Social.{ Post, Comment, Media, Like, PostEdit }
+  alias SportsnetApi.Social.{Post, Comment, Media, Like, PostEdit}
+
+  # ==========================================================================
+  # Posts
+  # ==========================================================================
 
   @doc """
-  Creates a new post by the user, optionally with media files
-
-  ## Parameters
-  - `attrs` - Map containing post attributes (caption, user_id, sport_id, city_id)
-  - `files` - List of Plug.Upload structs for media files (optional, defaults to [])
-
-  ## Returns
-  - `{:ok, {post, media_records}}` - Success with post and list of associated media records
-  - `{:error, reason}` - Error with changeset (for post validation) or error message (for file operations)
-
-  ## Examples
-
-      # Create post without media
-      iex> create_post(%{caption: "Hello world", user_id: 1, sport_id: 1, city_id: 1})
-      {:ok, {%Post{}, []}}
-
-      # Create post with media files
-      iex> files = [%Plug.Upload{filename: "photo.jpg", ...}]
-      iex> create_post(%{caption: "Check this out!", user_id: 1, sport_id: 1, city_id: 1}, files)
-      {:ok, {%Post{}, [%Media{}]}}
-
-      # Invalid post attributes
-      iex> create_post(%{caption: nil, user_id: nil})
-      {:error, %Ecto.Changeset{}}
-
-      # Invalid file type
-      iex> files = [%Plug.Upload{filename: "document.pdf", ...}]
-      iex> create_post(%{caption: "Valid post", user_id: 1, sport_id: 1, city_id: 1}, files)
-      {:error, "Unsupported file extension .pdf"}
+  Creates a new post by the user, optionally with media files.
   """
   @spec create_post(map(), list()) ::
-  {:ok, %SportsnetApi.Social.Post{}}
-  | {:error, Ecto.Changeset.t()}
-  | {:error, String.t()}
+          {:ok, %Post{}}
+          | {:error, Ecto.Changeset.t()}
+          | {:error, String.t()}
   def create_post(attrs, files \\ []) do
     Repo.transaction(fn ->
       with {:ok, post} <- insert_post(attrs),
@@ -54,6 +30,147 @@ defmodule SportsnetApi.Social do
     end)
   end
 
+  def get_post(post_id) do
+    case Repo.get(Post, post_id) do
+      nil -> {:error, "Post not found"}
+      post -> {:ok, Repo.preload(post, [:user, :media, :comments, :sport, :city])}
+    end
+  end
+
+  def edit_post(post_id, new_caption, current_user, ip_address) do
+    with {:ok, post} <- get_post(post_id),
+         :ok <- verify_ownership(post.user_id, current_user.id),
+         :ok <- verify_edit_window(post),
+         :ok <- verify_caption_changed(post, new_caption),
+         {:ok, updated_post} <- perform_edit(post, new_caption, current_user, ip_address) do
+      {:ok, updated_post}
+    end
+  end
+
+  def delete_post(post_id, current_user) do
+    with {:ok, post} <- get_post(post_id),
+         :ok <- verify_ownership(post.user_id, current_user.id) do
+      post
+      |> Post.changeset(%{deleted_at: DateTime.utc_now()})
+      |> Repo.update()
+    end
+  end
+
+  # ==========================================================================
+  # Comments
+  # ==========================================================================
+
+  def create_comment(attrs) do
+    Repo.transaction(fn ->
+      with {:ok, comment} <- insert_comment(attrs) do
+        comment
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+  end
+
+  def get_comment(comment_id) do
+    case Repo.get(Comment, comment_id) do
+      nil -> {:error, "Comment not found"}
+      comment -> {:ok, Repo.preload(comment, [:user])}
+    end
+  end
+
+  def list_comments_for_post(post_id) do
+    Comment
+    |> where([c], c.post_id == ^post_id)
+    |> order_by(asc: :inserted_at)
+    |> Repo.all()
+  end
+
+  def get_replies_count(comment_id) do
+    query =
+      from c in Comment,
+      where: c.parent_comment_id == ^comment_id,
+      select: count(c.id)
+
+    Repo.one(query)
+  end
+
+  # ==========================================================================
+  # Likes
+  # ==========================================================================
+
+  @doc """
+  Like or unlike a post
+  """
+  def like_post(%{does_like: true, user_id: user_id, post_id: post_id}) do
+    %Like{}
+    |> Like.changeset(%{user_id: user_id, post_id: post_id})
+    |> Repo.insert(on_conflict: :nothing)
+  end
+
+  def like_post(%{does_like: false, user_id: user_id, post_id: post_id}) do
+    case from(l in Like, where: l.user_id == ^user_id and l.post_id == ^post_id)
+         |> Repo.delete_all() do
+      {1, _} -> {:ok, :unliked}
+      {0, _} -> {:ok, :already_unliked}
+    end
+  end
+
+  @doc """
+  Check if a user has liked a post
+  """
+  def user_liked_post?(user_id, post_id) do
+    query =
+      from l in Like,
+        where: l.user_id == ^user_id and l.post_id == ^post_id
+
+    Repo.exists?(query)
+  end
+
+  @doc """
+  Get like count for a post or a comment
+  """
+  def get_like_count(id, :post) do
+    query =
+      from l in Like,
+        where: l.post_id == ^id,
+        select: count(l.id)
+
+    Repo.one(query)
+  end
+
+  def get_like_count(id, :comment) do
+    query =
+      from l in Like,
+        where: l.comment_id == ^id,
+        select: count(l.id)
+
+    Repo.one(query)
+  end
+
+  @doc """
+  Get users who liked a post
+  """
+  def get_post_likes(post_id) do
+    query =
+      from l in Like,
+        where: l.post_id == ^post_id,
+        join: u in assoc(l, :user),
+        select: u,
+        order_by: [desc: l.inserted_at]
+
+    Repo.all(query)
+  end
+
+  # ==========================================================================
+  # Private Helpers
+  # ==========================================================================
+
+  # -- Shared Helpers --
+
+  defp verify_ownership(owner_id, user_id) when owner_id == user_id, do: :ok
+  defp verify_ownership(_owner_id, _user_id), do: {:error, "Unauthorized"}
+
+  # -- Post Helpers --
+
   defp insert_post(attrs) do
     %Post{}
     |> Post.changeset(attrs)
@@ -61,6 +178,7 @@ defmodule SportsnetApi.Social do
   end
 
   defp create_media_post(_post, []), do: {:ok, []}
+
   defp create_media_post(post, files) do
     files
     |> Enum.with_index()
@@ -74,7 +192,6 @@ defmodule SportsnetApi.Social do
 
   defp insert_media_file(file, post_id, position) do
     with {:ok, file_info} <- SportsnetApi.MediaStorage.store_file(file, post_id) do
-
       attrs = %{
         url: file_info.url,
         media_type: file_info.media_type,
@@ -87,109 +204,6 @@ defmodule SportsnetApi.Social do
       %Media{}
       |> Media.changeset(attrs)
       |> Repo.insert()
-    end
-  end
-
-  @doc """
-  Like or unlike a post
-  """
-  def like_post(%{does_like: true, user_id: user_id, post_id: post_id}) do
-    %Like{}
-    |> Like.changeset(%{user_id: user_id, post_id: post_id})
-    |> Repo.insert(on_conflict: :nothing)
-  end
-
-  def like_post(%{does_like: false, user_id: user_id, post_id: post_id}) do
-    case from(l in Like, where: l.user_id == ^user_id and l.post_id == ^post_id)
-        |> Repo.delete_all() do
-      {1, _} -> {:ok, :unliked}
-      {0, _} -> {:ok, :already_unliked}
-    end
-  end
-
-  @doc """
-  Check if a user has liked a post
-  """
-  def user_liked_post?(user_id, post_id) do
-    query = from l in Like,
-      where: l.user_id == ^user_id and l.post_id == ^post_id
-
-    Repo.exists?(query)
-  end
-
-  @doc """
-  Get like count for a post or a comment
-  """
-  def get_like_count(id, :post) do
-    query = from l in Like,
-      where: l.post_id == ^id,
-      select: count(l.id)
-
-    Repo.one(query)
-  end
-
-  def get_like_count(id, :comment) do
-    query = from l in Like,
-      where: l.comment_id == ^id,
-      select: count(l.id)
-
-    Repo.one(query)
-  end
-
-  @doc """
-  Get users who liked a post
-  """
-  def get_post_likes(post_id) do
-    query = from l in Like,
-      where: l.post_id == ^post_id,
-      join: u in assoc(l, :user),
-      select: u,
-      order_by: [desc: l.inserted_at]
-
-    Repo.all(query)
-  end
-
-  def get_post(id) do
-    case Repo.get(Post, id) do
-      nil -> {:error, :not_found}
-      post -> {:ok, post}
-    end
-  end
-
-  def delete_post(post_id, current_user) do
-    with {:ok, post} <- fetch_post(post_id),
-        :ok <- verify_ownership(post.user_id, current_user.id) do
-      post
-      |> Post.changeset(%{deleted_at: DateTime.utc_now()})
-      |> Repo.update()
-    end
-  end
-
-  def edit_post(post_id, new_caption, current_user, ip_address) do
-    with {:ok, post} <- fetch_post(post_id),
-        :ok <- verify_ownership(post.user_id, current_user.id),
-        :ok <- verify_edit_window(post),
-        :ok <- verify_caption_changed(post, new_caption),
-        {:ok, updated_post} <- perform_edit(post, new_caption, current_user, ip_address) do
-      {:ok, updated_post}
-    end
-  end
-
-  def list_comments_for_post(post_id) do
-    Comment
-    |> where([c], c.post_id == ^post_id)
-    |> order_by(asc: :inserted_at)
-    |> Repo.all
-  end
-
-  defp verify_ownership(post_user_id, user_id)
-    when post_user_id == user_id, do: :ok
-  defp verify_ownership(_post, _user), do: {:error, "Unauthorized"}
-
-  defp fetch_post(post_id) do
-    case Repo.get(Post, post_id) do
-      nil -> {:error, "Post not found"}
-      post -> {:ok, Repo.preload(post, [:user, :media, :comments, :sport, :city])}
     end
   end
 
@@ -235,15 +249,7 @@ defmodule SportsnetApi.Social do
     end)
   end
 
-  def create_comment(attrs) do
-    Repo.transaction(fn ->
-      with {:ok, comment} <- insert_comment(attrs) do
-        comment
-      else
-        {:error, reason} -> Repo.rollback(reason)
-      end
-    end)
-  end
+  # -- Comment Helpers --
 
   defp insert_comment(attrs) do
     %Comment{}

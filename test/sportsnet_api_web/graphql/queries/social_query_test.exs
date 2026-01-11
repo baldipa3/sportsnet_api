@@ -5,6 +5,150 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
   import SportsnetApi.Factory
   import SportsnetApi.Accounts
 
+  @post_by_city_and_sport_query """
+    query postsByCityAndSport($citySlug: String!, $sportSlug: String!, $first: Int, $after: String) {
+      postsByCityAndSport(citySlug: $citySlug, sportSlug: $sportSlug) {
+        sport {
+          id
+          name
+          slug
+        }
+        city {
+          id
+          name
+          slug
+        }
+        posts(first: $first, after: $after) {
+          edges {
+            node {
+              id
+              caption
+              insertedAt
+              postLikesCount
+              likedByCurrentUser
+              comments(first: 10) {
+                edges {
+                  node {
+                    content
+                  }
+                }
+              }
+              media {
+                url
+              }
+              user {
+                id
+              }
+            }
+          }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
+        }
+      }
+    }
+  """
+
+  @post_pagination_query """
+    query postsByCityAndSport($citySlug: String!, $sportSlug: String!, $first: Int, $after: String) {
+      postsByCityAndSport(citySlug: $citySlug, sportSlug: $sportSlug) {
+        posts(first: $first, after: $after) {
+          edges {
+            node {
+              id
+            }
+          }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+        }
+      }
+    }
+  """
+
+  @comments_query """
+    query($postId: ID!, $first: Int, $after: String) {
+      node(id: $postId) {
+        ... on Post {
+          comments(first: $first, after: $after) {
+            edges {
+              node {
+                id
+                content
+                repliesCount
+                commentLikesCount
+                user {
+                  id
+                  name
+                }
+              }
+              cursor
+            }
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+          }
+        }
+      }
+    }
+  """
+
+  @comments_pagination_query """
+    query($postId: ID!, $first: Int, $after: String) {
+      node(id: $postId) {
+        ... on Post {
+          comments(first: $first, after: $after) {
+            edges {
+              node {
+                id
+              }
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+          }
+        }
+      }
+    }
+  """
+
+  @replies_query """
+    query($parentCommentId: ID!, $first: Int, $after: String) {
+      node(id: $parentCommentId) {
+        ... on Comment {
+          replies(first: $first, after: $after) {
+            edges {
+              node {
+                id
+                content
+                commentLikesCount
+                user {
+                  id
+                  name
+                }
+              }
+              cursor
+            }
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              startCursor
+              endCursor
+            }
+          }
+        }
+      }
+    }
+  """
+
   describe "postsByCityAndSport query" do
     setup %{conn: conn} do
       user = insert(:user)
@@ -24,53 +168,6 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
 
       insert(:post_with_media, %{user: user, city: other_city, sport: other_sport})
 
-      query = """
-        query postsByCityAndSport($citySlug: String!, $sportSlug: String!, $first: Int, $after: String) {
-          postsByCityAndSport(citySlug: $citySlug, sportSlug: $sportSlug) {
-            sport {
-              id
-              name
-              slug
-            }
-            city {
-              id
-              name
-              slug
-            }
-            posts(first: $first, after: $after) {
-              edges {
-                node {
-                  id
-                  caption
-                  insertedAt
-                  postLikesCount
-                  likedByCurrentUser
-                  comments(first: 10) {
-                    edges {
-                      node {
-                        content
-                      }
-                    }
-                  }
-                  media {
-                    url
-                  }
-                  user {
-                    id
-                  }
-                }
-              }
-              pageInfo {
-                hasNextPage
-                hasPreviousPage
-                startCursor
-                endCursor
-              }
-            }
-          }
-        }
-      """
-
       # Request 4 posts when having 3 active posts and 1 deleted
       variables = %{
         "citySlug" => city.slug,
@@ -81,7 +178,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       conn =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{query: query, variables: variables})
+        |> post("/graphql", %{query: @post_by_city_and_sport_query, variables: variables})
 
 
       assert %{"data" =>  %{"postsByCityAndSport" => %{
@@ -145,24 +242,6 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
     test "fetches next post page using cursor", %{conn: conn, token: token, user: user, city: city, sport: sport} do
       insert_list(3, :post_with_media, %{user: user, city: city, sport: sport})
 
-      query = """
-        query postsByCityAndSport($citySlug: String!, $sportSlug: String!, $first: Int, $after: String) {
-          postsByCityAndSport(citySlug: $citySlug, sportSlug: $sportSlug) {
-            posts(first: $first, after: $after) {
-              edges {
-                node {
-                  id
-                }
-              }
-              pageInfo {
-                hasNextPage
-                endCursor
-              }
-            }
-          }
-        }
-      """
-
       variables = %{
         "citySlug" => city.slug,
         "sportSlug" => sport.slug,
@@ -172,7 +251,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       conn1 =
         conn
         |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{query: query, variables: variables})
+        |> post("/graphql", %{query: @post_pagination_query, variables: variables})
 
       assert %{
                "data" => %{
@@ -189,7 +268,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       conn2 =
         build_conn()
         |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{query: query, variables: variables2})
+        |> post("/graphql", %{query: @post_pagination_query, variables: variables2})
 
       assert %{
                "data" => %{
@@ -257,37 +336,11 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
       post = insert(:post_with_media, %{user: user, city: city, sport: sport})
       comments = insert_list(5, :comment, %{post: post, user: user})
 
-      %{conn: conn, token: token, post: post, comments: comments}
+      %{conn: conn, token: token, post: post, comments: comments, user: user}
     end
 
     test "fetches paginated comments for a post", %{conn: conn, token: token, post: post} do
       post_global_id = to_global_id("Post", post.id)
-
-      query = """
-        query($postId: ID!, $first: Int, $after: String) {
-          node(id: $postId) {
-            ... on Post {
-              id
-              caption
-              comments(first: $first, after: $after) {
-                edges {
-                  node {
-                    id
-                    content
-                  }
-                  cursor
-                }
-                pageInfo {
-                  hasNextPage
-                  hasPreviousPage
-                  startCursor
-                  endCursor
-                }
-              }
-            }
-          }
-        }
-      """
 
       variables = %{
         "postId" => post_global_id,
@@ -296,7 +349,7 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
 
       conn = conn
         |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{query: query, variables: variables})
+        |> post("/graphql", %{query: @comments_query, variables: variables})
 
       assert %{
         "data" => %{
@@ -320,32 +373,12 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
     test "fetches next page of comments using cursor", %{conn: conn, token: token, post: post} do
       post_global_id = to_global_id("Post", post.id)
 
-      query = """
-        query($postId: ID!, $first: Int, $after: String) {
-          node(id: $postId) {
-            ... on Post {
-              comments(first: $first, after: $after) {
-                edges {
-                  node {
-                    id
-                  }
-                }
-                pageInfo {
-                  hasNextPage
-                  endCursor
-                }
-              }
-            }
-          }
-        }
-      """
-
       # First page
       variables1 = %{"postId" => post_global_id, "first" => 3}
 
       conn1 = conn
         |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{query: query, variables: variables1})
+        |> post("/graphql", %{query: @comments_pagination_query, variables: variables1})
 
       %{"data" => %{"node" => %{"comments" => %{
         "pageInfo" => %{"endCursor" => cursor}
@@ -356,12 +389,87 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
 
       conn2 = build_conn()
         |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/graphql", %{query: query, variables: variables2})
+        |> post("/graphql", %{query: @comments_pagination_query, variables: variables2})
 
       assert %{
         "data" => %{
           "node" => %{
             "comments" => %{
+              "edges" => edges,
+              "pageInfo" => %{"hasNextPage" => false}
+            }
+          }
+        }
+      } = json_response(conn2, 200)
+
+      assert length(edges) == 2  # Remaining comments
+    end
+
+    test "fetches paginated comments for a comment", %{conn: conn, token: token, post: post, user: user} do
+      parent_comment = insert(:comment, %{post: post, user: user})
+      parent_comment_global_id = to_global_id("Comment", parent_comment.id)
+      insert_list(5, :comment, %{post: post, user: user, parent_comment: parent_comment})
+
+      variables = %{
+        "parentCommentId" => parent_comment_global_id,
+        "first" => 3
+      }
+
+      conn = conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: @replies_query, variables: variables})
+
+      assert %{
+        "data" => %{
+          "node" => %{
+            "replies" => %{
+              "edges" => edges,
+              "pageInfo" => %{
+                "hasNextPage" => has_next,
+                "endCursor" => end_cursor
+              }
+            }
+          }
+        }
+      } = json_response(conn, 200)
+
+      assert length(edges) == 3
+      assert has_next == true
+      assert is_binary(end_cursor)
+    end
+
+    test "fetches next page of comments for a comment using cursor", %{conn: conn, token: token, post: post, user: user} do
+      parent_comment = insert(:comment, %{post: post, user: user})
+      parent_comment_global_id = to_global_id("Comment", parent_comment.id)
+      insert_list(5, :comment, %{post: post, user: user, parent_comment: parent_comment})
+
+      variables1 = %{
+        "parentCommentId" => parent_comment_global_id,
+        "first" => 3
+      }
+
+      conn1 = conn
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: @replies_query, variables: variables1})
+
+      %{"data" => %{"node" => %{"replies" => %{
+        "pageInfo" => %{"endCursor" => cursor}
+      }}}} = json_response(conn1, 200)
+
+      variables2 = %{
+        "parentCommentId" => parent_comment_global_id,
+        "first" => 3,
+        "after" => cursor
+      }
+
+      conn2 = build_conn()
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: @replies_query, variables: variables2})
+
+      assert %{
+        "data" => %{
+          "node" => %{
+            "replies" => %{
               "edges" => edges,
               "pageInfo" => %{"hasNextPage" => false}
             }
