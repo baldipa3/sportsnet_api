@@ -4,6 +4,8 @@ defmodule SportsnetApi.Social.Comment do
 
   schema "comments" do
     field :content, :string
+    field :deleted_at, :utc_datetime
+
     belongs_to :user, SportsnetApi.Accounts.User
     belongs_to :post, SportsnetApi.Social.Post
     belongs_to :parent_comment, SportsnetApi.Social.Comment
@@ -18,7 +20,7 @@ defmodule SportsnetApi.Social.Comment do
   """
   def changeset(comment, attrs) do
     comment
-    |> cast(attrs, [:content, :user_id, :post_id, :parent_comment_id])
+    |> cast(attrs, [:content, :user_id, :post_id, :parent_comment_id, :deleted_at])
     |> validate_required([:content, :user_id, :post_id])
   end
 end

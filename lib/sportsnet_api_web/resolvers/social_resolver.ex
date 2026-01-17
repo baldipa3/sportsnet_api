@@ -145,6 +145,20 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
     Absinthe.Relay.Connection.from_query(query, &SportsnetApi.Repo.all/1, args)
   end
 
+  def delete_comment(_parent, args, %{context: %{current_user: current_user}}) do
+    with {:ok, %{type: :comment, id: comment_id_str}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
+         comment_id <- String.to_integer(comment_id_str) do
+      Social.delete_comment(comment_id, current_user)
+    end
+  end
+
+  def edit_comment(_parent, args, %{context: %{current_user: current_user, ip_address: ip_address}}) do
+    with {:ok, %{type: :comment, id: comment_id_str}} <- from_global_id(args.id, SportsnetApiWeb.Schema),
+         comment_id <- String.to_integer(comment_id_str) do
+      Social.edit_comment(comment_id, args.content, current_user, ip_address)
+    end
+  end
+
   # ==========================================================================
   # Likes & Feeds
   # ==========================================================================

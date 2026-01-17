@@ -91,6 +91,7 @@ defmodule SportsnetApiWeb.Schema do
   node object :comment do
     field :content, :string
     field :inserted_at, :datetime
+    field :was_edited, :boolean
 
     field :comment_likes_count, non_null(:integer) do
       resolve fn comment, _, _ ->
@@ -268,6 +269,21 @@ defmodule SportsnetApiWeb.Schema do
       arg :parent_comment_id, :id
 
       resolve(&SocialResolver.create_comment/3)
+    end
+
+    @desc "Soft delete a comment"
+    field :delete_comment, non_null(:comment) do
+      arg :id, non_null(:id)
+
+      resolve(&SocialResolver.delete_comment/3)
+    end
+
+    @desc "Edit a comment and record an edit_comment"
+    field :edit_comment, non_null(:comment) do
+      arg :id, non_null(:id)
+      arg :content, non_null(:string)
+
+      resolve(&SocialResolver.edit_comment/3)
     end
   end
 end

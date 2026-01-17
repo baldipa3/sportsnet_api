@@ -9,6 +9,7 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
   alias Plug.Upload
   alias SportsnetApi.Repo
   alias SportsnetApi.Social.PostEdit
+  alias SportsnetApi.Social.CommentEdit
 
   setup %{conn: conn} do
     user = insert(:user)
@@ -459,6 +460,94 @@ defmodule SportsnetApiWeb.Graphql.Mutations.SocialMutationsTest do
 
       assert comment_in_db.parent_comment_id == parent_comment.id
       assert comment_in_db.post_id == post.id
+    end
+  end
+
+  describe "editComment mutation" do
+    test "comment owner can edit its own comment", %{conn: conn, token: token, user: user} do
+      comment = insert(:comment, user: user)
+      encoded_comment_id = to_global_id("Comment", comment.id)
+
+      mutation = """
+        mutation editComment($id: ID!, $content: String!) {
+          editComment(id: $id, content: $content) {
+            id
+            content
+            wasEdited
+          }
+        }
+      """
+
+      variables = %{
+        "id" => encoded_comment_id,
+        "content" => "Edited comment"
+      }
+
+      conn = post_graphql(conn, token, mutation, variables)
+      response = mutation_result(conn, "editComment")
+
+      assert %{
+        "id" => ^encoded_comment_id,
+        "content" => "Edited comment",
+        "wasEdited" => true
+      } = response
+
+      edit_comment = Repo.get_by(CommentEdit, comment_id: comment.id)
+      assert edit_comment != nil
+      assert edit_comment.old_content == comment.content
+      assert edit_comment.new_content == "Edited comment"
+    end
+
+    test "users cannot edit other user comment", %{conn: conn, user: user} do
+      user_2 = insert(:user)
+      user_2_token = create_user_api_token(user_2)
+      comment = insert(:comment, user: user)
+      encoded_comment_id = to_global_id("Comment", comment.id)
+
+      mutation = """
+        mutation editComment($id: ID!, $content: String!) {
+          editComment(id: $id, content: $content) {
+            id
+            content
+            wasEdited
+          }
+        }
+      """
+
+      variables = %{
+        "id" => encoded_comment_id,
+        "content" => "Edited comment"
+      }
+
+      conn = post_graphql(conn, user_2_token, mutation, variables)
+      response = errors_result(conn)
+
+      assert [%{"message" => "Unauthorized" }] = response
+    end
+
+    test "comment cannot be edited after 15 min", %{conn: conn, token: token, user: user} do
+      comment = insert(:comment, user: user, inserted_at: DateTime.add(DateTime.utc_now(), -16 * 60, :second))
+      encoded_comment_id = to_global_id("Comment", comment.id)
+
+      mutation = """
+        mutation editComment($id: ID!, $content: String!) {
+          editComment(id: $id, content: $content) {
+            id
+            content
+            wasEdited
+          }
+        }
+      """
+
+      variables = %{
+        "id" => encoded_comment_id,
+        "content" => "Edited comment"
+      }
+
+      conn = post_graphql(conn, token, mutation, variables)
+      response = errors_result(conn)
+
+      assert [%{"message" => "Comments can only be edited within 15 minutes of creation"}] = response
     end
   end
 end

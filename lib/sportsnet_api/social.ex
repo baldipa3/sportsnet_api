@@ -6,7 +6,7 @@ defmodule SportsnetApi.Social do
   import Ecto.Query, warn: false
 
   alias SportsnetApi.Repo
-  alias SportsnetApi.Social.{Post, Comment, Media, Like, PostEdit}
+  alias SportsnetApi.Social.{Post, Comment, Media, Like, PostEdit, CommentEdit}
 
   # ==========================================================================
   # Posts
@@ -42,7 +42,7 @@ defmodule SportsnetApi.Social do
          :ok <- verify_ownership(post.user_id, current_user.id),
          :ok <- verify_edit_window(post),
          :ok <- verify_caption_changed(post, new_caption),
-         {:ok, updated_post} <- perform_edit(post, new_caption, current_user, ip_address) do
+         {:ok, updated_post} <- perform_post_edit(post, new_caption, current_user, ip_address) do
       {:ok, updated_post}
     end
   end
@@ -91,6 +91,25 @@ defmodule SportsnetApi.Social do
       select: count(c.id)
 
     Repo.one(query)
+  end
+
+  def edit_comment(comment_id, new_content, current_user, ip_address) do
+    with {:ok, comment} <- get_comment(comment_id),
+         :ok <- verify_ownership(comment.user_id, current_user.id),
+         :ok <- verify_edit_window(comment),
+         :ok <- verify_content_changed(comment, new_content),
+         {:ok, updated_comment} <- perform_comment_edit(comment, new_content, current_user, ip_address) do
+      {:ok, updated_comment}
+    end
+  end
+
+  def delete_comment(comment_id, current_user) do
+    with {:ok, comment} <- get_comment(comment_id),
+         :ok <- verify_ownership(comment.user_id, current_user.id) do
+      comment
+      |> Comment.changeset(%{deleted_at: DateTime.utc_now()})
+      |> Repo.update()
+    end
   end
 
   # ==========================================================================
@@ -169,6 +188,25 @@ defmodule SportsnetApi.Social do
   defp verify_ownership(owner_id, user_id) when owner_id == user_id, do: :ok
   defp verify_ownership(_owner_id, _user_id), do: {:error, "Unauthorized"}
 
+  defp verify_edit_window(%Post{inserted_at: inserted_at}) do
+    check_edit_window(inserted_at, "Posts")
+  end
+
+  defp verify_edit_window(%Comment{inserted_at: inserted_at}) do
+    check_edit_window(inserted_at, "Comments")
+  end
+
+  defp check_edit_window(inserted_at, content_type) do
+    now = DateTime.utc_now()
+    minutes_elapsed = DateTime.diff(now, inserted_at, :minute)
+
+    if minutes_elapsed <= 15 do
+      :ok
+    else
+      {:error, "#{content_type} can only be edited within 15 minutes of creation"}
+    end
+  end
+
   # -- Post Helpers --
 
   defp insert_post(attrs) do
@@ -207,17 +245,6 @@ defmodule SportsnetApi.Social do
     end
   end
 
-  defp verify_edit_window(%Post{inserted_at: inserted_at}) do
-    now = DateTime.utc_now()
-    minutes_elapsed = DateTime.diff(now, inserted_at, :minute)
-
-    if minutes_elapsed <= 15 do
-      :ok
-    else
-      {:error, "Posts can only be edited within 15 minutes of creation"}
-    end
-  end
-
   defp verify_caption_changed(%Post{caption: old_caption}, new_caption) do
     old_trimmed = String.trim(old_caption || "")
     new_trimmed = String.trim(new_caption)
@@ -229,7 +256,7 @@ defmodule SportsnetApi.Social do
     end
   end
 
-  defp perform_edit(%Post{} = post, new_caption, current_user, ip_address) do
+  defp perform_post_edit(%Post{} = post, new_caption, current_user, ip_address) do
     Repo.transaction(fn ->
       %PostEdit{}
       |> PostEdit.changeset(%{
@@ -255,5 +282,36 @@ defmodule SportsnetApi.Social do
     %Comment{}
     |> Comment.changeset(attrs)
     |> Repo.insert()
+  end
+
+  defp verify_content_changed(%Comment{content: old_content}, new_content) do
+    old_trimmed = String.trim(old_content || "")
+    new_trimmed = String.trim(new_content)
+
+    if old_trimmed == new_trimmed do
+      {:error, "New content must be different from the current content"}
+    else
+      :ok
+    end
+  end
+
+  defp perform_comment_edit(%Comment{} = comment, new_content, current_user, ip_address) do
+    Repo.transaction(fn ->
+      %CommentEdit{}
+      |> CommentEdit.changeset(%{
+        old_content: comment.content,
+        new_content: new_content,
+        user_id: current_user.id,
+        comment_id: comment.id,
+        ip_address: ip_address
+      })
+      |> Repo.insert!()
+
+      comment
+      |> Comment.changeset(%{content: new_content})
+      |> Repo.update!()
+      |> Repo.preload(:user)
+      |> Map.put(:was_edited, true)
+    end)
   end
 end
