@@ -327,6 +327,75 @@ defmodule SportsnetApiWeb.Graphql.Queries.SocialQueryTest do
     end
   end
 
+  describe "comments count" do
+    test "returns the correct comments count for a post" do
+      user = insert(:user)
+      token = create_user_api_token(user)
+      post = insert(:post, user: user)
+
+      # Insert 3 comments for the post
+      insert_list(3, :comment, post: post, user: user)
+
+      post_global_id = to_global_id("Post", post.id)
+
+      query = """
+        query {
+          node(id: "#{post_global_id}") {
+            ... on Post {
+              id
+              commentsCount
+            }
+          }
+        }
+      """
+
+      conn = build_conn()
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: query})
+
+      assert %{
+        "data" => %{
+          "node" => %{
+            "id" => ^post_global_id,
+            "commentsCount" => 3
+          }
+        }
+      } = json_response(conn, 200)
+    end
+
+    test "returns zero comments count when post has no comments" do
+      user = insert(:user)
+      token = create_user_api_token(user)
+      post = insert(:post, user: user)
+
+      post_global_id = to_global_id("Post", post.id)
+
+      query = """
+        query {
+          node(id: "#{post_global_id}") {
+            ... on Post {
+              id
+              commentsCount
+            }
+          }
+        }
+      """
+
+      conn = build_conn()
+        |> put_req_header("authorization", "Bearer #{token}")
+        |> post("/graphql", %{query: query})
+
+      assert %{
+        "data" => %{
+          "node" => %{
+            "id" => ^post_global_id,
+            "commentsCount" => 0
+          }
+        }
+      } = json_response(conn, 200)
+    end
+  end
+
   describe "comments pagination" do
     setup %{conn: conn} do
       user = insert(:user)

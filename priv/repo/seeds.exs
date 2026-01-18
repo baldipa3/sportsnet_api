@@ -116,15 +116,15 @@ end)
 IO.puts "--------------"
 IO.puts "Creating users"
 {:ok,user_1} = SportsnetApi.Accounts.register_user(%{
-  name: Faker.Person.first_name(),
-  surname: Faker.Person.last_name(),
+  name: "John",
+  surname: "Doe",
   email: "john.doe@gmail.com",
   password: "Password123"
 })
 
 {:ok,user_2} = SportsnetApi.Accounts.register_user(%{
-  name: Faker.Person.first_name(),
-  surname: Faker.Person.last_name(),
+  name: "Mary",
+  surname: "Doe",
   email: "mary.doe@gmail.com",
   password: "Password123"
 })

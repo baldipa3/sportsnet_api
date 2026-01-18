@@ -88,6 +88,17 @@ defmodule SportsnetApi.Social do
     query =
       from c in Comment,
       where: c.parent_comment_id == ^comment_id,
+      where: is_nil(c.deleted_at),
+      select: count(c.id)
+
+    Repo.one(query)
+  end
+
+  def get_comments_count(post_id) do
+    query =
+      from c in Comment,
+      where: c.post_id == ^post_id,
+      where: is_nil(c.deleted_at),
       select: count(c.id)
 
     Repo.one(query)

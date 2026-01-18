@@ -144,6 +144,12 @@ defmodule SportsnetApiWeb.Schema do
       end
     end
 
+    field :comments_count, non_null(:integer) do
+      resolve fn post, _, _ ->
+        {:ok, SportsnetApi.Social.get_comments_count(post.id)}
+      end
+    end
+
     field :liked_by_current_user, :boolean do
       resolve fn post, _, resolution ->
         case resolution.context do

@@ -96,7 +96,7 @@ defmodule SportsnetApiWeb.Resolvers.SocialResolver do
       case Social.create_comment(attrs) do
         {:ok, comment} ->
           comment = Repo.preload(comment, [:user])
-          parent_node = fetch_parent_node(parent_type, parent_id, post_id)
+          {:ok, parent_node} = fetch_parent_node(parent_type, parent_id, post_id)
 
           edge = %{
             node: comment,
