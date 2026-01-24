@@ -89,7 +89,7 @@ defmodule SportsnetApiWeb.Schema do
   end
 
   node object :comment do
-    field :content, :string
+    field :content, non_null(:string)
     field :inserted_at, :datetime
     field :was_edited, :boolean
 
